@@ -31,8 +31,9 @@ You should now see in the terminal:
 Listening on port: 3000
 ```
 ## 📚 Readings
-get a gist of the technologies we will be using.
-Before getting started on a task, you must take this knowledge quiz to see what you don't know.
+Get a feel for the technologies we’ll be working with!
+
+Before starting any project work, take the Knowledge Quiz below to review key technologies and spot any knowledge gaps:
 QUIZ: https://forms.gle/32umqmV6hDcfohybA
 
 ### 1. REST APIs
