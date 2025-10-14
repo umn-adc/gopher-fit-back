@@ -1,19 +1,36 @@
 package main
 
 import (
-	"gopherfit/server/endpoints/example"
 	"net/http"
+
+	"gopherfit/endpoints/example"
+	"gopherfit/internal/auth"
+	"gopherfit/internal/health"
+	"gopherfit/internal/macros"
+	"gopherfit/internal/db"
 )
 
 func main() {
+	// Initialize the database
+	if _, err := db.OpenDB(); err != nil {
+		panic(err)
+	}
+	defer db.CloseDB()
+
 	baseMux := http.NewServeMux()
 
-	baseMux.HandleFunc("/cool", func(w http.ResponseWriter, r *http.Request) {
-		println("Got message at /cool!")
+	// EXAMPLE ENDPOINTS
+	baseMux.Handle("/example/", example.GetServeMux())
+	baseMux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"message": "pong"}`))
 	})
 
-	baseMux.Handle("/example/", example.GetServeMux())
+	// APP ENDPOINTS
+	baseMux.HandleFunc("/api/auth/", auth.Handler)
+	baseMux.HandleFunc("/api/macros", macros.Handler)
+	baseMux.HandleFunc("/api/health", health.Handler)
 
-	println("Listening")
+	println("Listening on port: 3000")
 	http.ListenAndServe("localhost:3000", baseMux)
 }
