@@ -48,3 +48,7 @@ Learn how relational databases work and how to query data efficiently.
 - [What is a relational database?](https://cloud.google.com/learn/what-is-a-relational-database) (Read first 3 sections)
 - [Learn SQL / SQLite](https://www.sqlitetutorial.net/) (Read "what is SQLite?", Section 1-3, and Section 9)
 - Optional: Download and learn DB Browser to view the project's SQLite database easily https://sqlitebrowser.org/
+
+## Example Route
+All app endpoints are in the internal/ folder.
+In gopher-fit-back/internal/macros/post.go there is an example route which handles POST /api/macros
