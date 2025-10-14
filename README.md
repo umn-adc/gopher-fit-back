@@ -8,7 +8,7 @@ Make sure you have these downloaded
 
 Then clone this repository into your computer's root folder (recommended)
 ```
-git clone https://github.com/umn-adc/gopherfit-back.git
+https://github.com/umn-adc/gopher-fit-back
 ```
 Then enter the project folder and open it in your IDE
 ```
