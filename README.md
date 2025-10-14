@@ -33,8 +33,7 @@ Listening on port: 3000
 ## 📚 Readings
 Get a feel for the technologies we’ll be working with!
 
-Before starting any project work, take the Knowledge Quiz below to review key technologies and spot any knowledge gaps:
-QUIZ: https://forms.gle/32umqmV6hDcfohybA
+Before starting any project work, take the Knowledge Quiz below to review key technologies and spot any knowledge gaps: https://forms.gle/32umqmV6hDcfohybA
 
 ### 1. REST APIs
 Understand how backend services communicate through HTTP requests and JSON.
