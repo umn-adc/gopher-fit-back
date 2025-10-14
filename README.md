@@ -31,7 +31,9 @@ You should now see in the terminal:
 Listening on port: 3000
 ```
 ## 📚 Readings
-Before getting started on tasks, get a gist of the technologies we will be using. 
+get a gist of the technologies we will be using.
+Before getting started on a task, you must take this knowledge quiz to see what you don't know.
+QUIZ: https://forms.gle/32umqmV6hDcfohybA
 
 ### 1. REST APIs
 Understand how backend services communicate through HTTP requests and JSON.
