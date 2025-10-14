@@ -12,7 +12,7 @@ https://github.com/umn-adc/gopher-fit-back
 ```
 Then enter the project folder and open it in your IDE
 ```
-cd gopherfit-back
+cd gopher-fit-back
 code .
 ```
 
