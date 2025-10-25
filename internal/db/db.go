@@ -35,6 +35,8 @@ package db
 import (
 	"database/sql"
 	"log"
+	"os"
+
 	_ "modernc.org/sqlite" // SQLite driver (do not remove)
 )
 
@@ -45,6 +47,7 @@ var DB *sql.DB
 // OpenDB connects to the SQLite database and ensures all tables exist.
 // Called once during server startup.
 func OpenDB() (*sql.DB, error) {
+	os.Remove("./gopherfit.db")
 	db, err := sql.Open("sqlite", "./gopherfit.db")
 	if err != nil {
 		return nil, err
