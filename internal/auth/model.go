@@ -11,8 +11,19 @@
 
 package auth
 
+import (
+	"github.com/golang-jwt/jwt/v5"
+)
+
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"password,omitempty"`
 }
+
+type Claims struct {
+	ID int
+	Username string
+	jwt.RegisteredClaims
+}
+

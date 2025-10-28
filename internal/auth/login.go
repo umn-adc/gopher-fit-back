@@ -5,6 +5,6 @@ import (
 )
 
 // handleLogin handles POST /api/auth/login requests.
-func handleLogin(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 }
