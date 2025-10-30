@@ -7,8 +7,9 @@ import (
 	"gopherfit/endpoints/practice"
 
 	// "gopherfit/internal/auth"
-	// "gopherfit/internal/health"
-	// "gopherfit/internal/macros"
+	// "gopherfit/internal/workouts"
+	// "gopherfit/internal/nutrition"
+	"gopherfit/internal/social"
 	"gopherfit/internal/db"
 )
 
@@ -25,6 +26,9 @@ func main() {
 	// the baseMux will mainly be used like this
 	baseMux.Handle("/practice/", practice.GetServeMux())
 	baseMux.Handle("/example/", example.GetServeMux())
+
+	// REGISTER PACKAGES
+	social.Register(baseMux)
 
 	// temporary example of defining an endpoint directly on the baseMux
 	baseMux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
