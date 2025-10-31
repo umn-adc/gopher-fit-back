@@ -8,14 +8,15 @@ import (
 
 	// "gopherfit/internal/auth"
 	// "gopherfit/internal/workouts"
-	// "gopherfit/internal/nutrition"
-	"gopherfit/internal/social"
+	"gopherfit/internal/nutrition"
+	// "gopherfit/internal/social"
 	"gopherfit/internal/db"
 )
 
 func main() {
 	// Initialize the database
-	if _, err := db.OpenDB(); err != nil {
+	conn, err := db.OpenDB()
+	if err != nil {
 		panic(err)
 	}
 	defer db.CloseDB()
@@ -27,9 +28,9 @@ func main() {
 	baseMux.Handle("/practice/", practice.GetServeMux())
 	baseMux.Handle("/example/", example.GetServeMux())
 
-	// REGISTER PACKAGES
-	social.Register(baseMux)
-
+	nutritionHandler := nutrition.NewHandler(conn)
+	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
+	
 	// temporary example of defining an endpoint directly on the baseMux
 	baseMux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

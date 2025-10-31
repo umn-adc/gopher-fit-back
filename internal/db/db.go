@@ -64,14 +64,29 @@ func OpenDB() (*sql.DB, error) {
 		password TEXT
 	);
 
-	CREATE TABLE IF NOT EXISTS macro_entries (
+	CREATE TABLE IF NOT EXISTS meals (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER,
-		date TEXT,
-		calories INTEGER,
-		protein INTEGER,
+		user_id INTEGER NOT NULL,
+		date TEXT NOT NULL,             -- "2025-10-30"
+		meal_type TEXT NOT NULL,        -- Breakfast, Lunch, Dinner, Snack
+		time TEXT,                      -- "08:30 AM"
+		total_calories INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS meal_items (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		meal_id INTEGER NOT NULL,
+		name TEXT NOT NULL,             -- "Oatmeal with berries"
+		calories INTEGER DEFAULT 0,
+		protein INTEGER DEFAULT 0,
+		carbs INTEGER DEFAULT 0,
+		fat INTEGER DEFAULT 0,
+		FOREIGN KEY (meal_id) REFERENCES meals(id) ON DELETE CASCADE
+	);
+
+
 
 	CREATE TABLE IF NOT EXISTS macro_goals (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
