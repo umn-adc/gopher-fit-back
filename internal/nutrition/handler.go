@@ -17,6 +17,8 @@ func (h *Handler) RegisterRoutes() *http.ServeMux {
 	r := http.NewServeMux()
 
 	r.HandleFunc("POST /nutrition/meals", h.addMeal)
+	
+	r.HandleFunc("POST /nutrition/meals/{id}/items", h.addMealItem)
 
 	return r
 }

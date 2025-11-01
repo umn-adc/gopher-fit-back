@@ -4,7 +4,7 @@ type Meal struct {
 	ID            int         `json:"id"`
 	UserID        int         `json:"user_id"`
 	Date          string      `json:"date"`
-	MealType      string      `json:"meal_type"`
+	MealType      string      `json:"meal_type"` // Breakfast, Lunch, Dinner, Snack
 	Time          string      `json:"time"`
 	TotalCalories int         `json:"total_calories"`
 	Items         []MealItem  `json:"items"`
