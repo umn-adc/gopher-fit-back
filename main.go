@@ -27,12 +27,6 @@ func main() {
 
 	nutritionHandler := nutrition.NewHandler(conn)
 	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
-	
-	// temporary example of defining an endpoint directly on the baseMux
-	baseMux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"message": "pong"}`))
-	})
 
 	println("Listening on port: 3000")
 	http.ListenAndServe("localhost:3000", baseMux)
