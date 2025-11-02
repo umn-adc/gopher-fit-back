@@ -15,11 +15,8 @@ import (
 
 func main() {
 	// Initialize the database
-	conn, err := db.OpenDB()
-	if err != nil {
-		panic(err)
-	}
-	defer db.CloseDB()
+	conn := db.InitDB()
+	defer conn.Close()
 
 	// here is the base mux
 	baseMux := http.NewServeMux()

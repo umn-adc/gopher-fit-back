@@ -78,12 +78,12 @@ func (h *Handler) addMealItem(w http.ResponseWriter, r *http.Request) {
 		VALUES (?, ?, ?, ?, ?, ?);
 	`
 	_, err := h.DB.Exec(query,
-		mealItem.meal_id,
-		mealItem.name,
-		mealItem.calories,
-		mealItem.protein,
-		mealItem.carbs,
-		mealItem.fat,
+		mealItem.MealID,
+		mealItem.Name,
+		mealItem.Calories,
+		mealItem.Protein,
+		mealItem.Carbs,
+		mealItem.Fat,
 	)
 	if err != nil {
 		http.Error(w, "failed to insert meal item", http.StatusInternalServerError)
