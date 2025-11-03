@@ -52,6 +52,16 @@ func InitDB() *sql.DB {
 		protein_target INTEGER,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
+	CREATE TABLE IF NOT EXISTS social_stats (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER UNIQUE,
+		followers_count INTEGER DEFAULT 0,
+		following_count INTEGER DEFAULT 0,
+		posts_count INTEGER DEFAULT 0,
+		rank INTEGER DEFAULT NULL,
+		streak_days INTEGER DEFAULT 0, -- Days of active engagement
+		FOREIGN KEY (USER_id) REFERENCES users(id) ON DELETE CASCADE
+	);
 	`)
 
 	if err != nil {
