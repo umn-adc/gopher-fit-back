@@ -11,16 +11,19 @@ import (
 // handleRegister handles POST /api/auth/register requests.
 // Creates a user in database after receiving a unique username
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.Query().Get("username")
-	passwd := r.URL.Query().Get("password")
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusInternalServerError)
+		return
+	}
 
-	if !validUsername(username) || !validPasswd(passwd) {
+	if !validUsername(user.Username) || !validPasswd(user.Password) {
 		http.Error(w, "Invalid Credentials", http.StatusUnauthorized)
 		return
 	}
 
 	// Hashes and salts password
-	hashedPasswd, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
+	hashedPasswd, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Issue with User Signup", http.StatusInternalServerError)
 		return
@@ -29,7 +32,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	DB := h.DB
 	res, err := DB.Exec(`INSERT INTO users (username, password)
 				VALUES (?, ?)
-	`, username, hashedPasswd)
+	`, user.Username, hashedPasswd)
 
 	// Error with insertion
 	if err != nil {
@@ -37,20 +40,19 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user User
 	id, err := res.LastInsertId()
 	if err != nil {
 		http.Error(w, "Issue with retrieving user ID", http.StatusInternalServerError)
+		return
 	}
 
 	user.ID = int(id)
-	user.Username = username
-	user.Password = passwd
 
 	// Create jwt based off of the user
 	tokenString, err := createToken(user)
 	if err != nil {
 		http.Error(w, "Issue with creating JWT token", http.StatusInternalServerError)
+		return
 	}
 
 	// Create our response and send as JSON
