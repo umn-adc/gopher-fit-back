@@ -17,15 +17,23 @@ package auth
 
 import (
 	"net/http"
+	"database/sql"
 )
 
-func Handler(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/api/auth/register":
-		handleRegister(w, r)
-	case "/api/auth/login":
-		handleLogin(w, r)
-	default:
-		http.Error(w, "not found", http.StatusNotFound)
-	}
+type Handler struct {
+	DB *sql.DB
+}
+
+func NewHandler(db *sql.DB) *Handler {
+	return &Handler{DB: db}
+}
+
+func (h *Handler) RegisterRoutes() *http.ServeMux {
+	r := http.NewServeMux()
+
+	r.HandleFunc("POST /auth/register", h.handleRegister)
+
+	r.HandleFunc("POST /auth/login", h.handleLogin)
+
+	return r
 }
