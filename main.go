@@ -27,7 +27,7 @@ func main() {
 	baseMux.Handle("/example/", example.GetServeMux())
 
 	authHandler := auth.NewHandler(conn)
-	baseMux.Handle("/api/auth/", authHandler.RegisterRoutes())
+	baseMux.Handle("/auth/", authHandler.RegisterRoutes())
 
 	nutritionHandler := nutrition.NewHandler(conn)
 	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
