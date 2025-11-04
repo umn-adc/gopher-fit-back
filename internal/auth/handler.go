@@ -31,9 +31,9 @@ func NewHandler(db *sql.DB) *Handler {
 func (h *Handler) RegisterRoutes() *http.ServeMux {
 	r := http.NewServeMux()
 
-	r.HandleFunc("POST /api/auth/register", h.handleRegister)
+	r.HandleFunc("POST /auth/register", h.handleRegister)
 
-	r.HandleFunc("POST /api/auth/login", h.handleLogin)
+	r.HandleFunc("POST /auth/login", h.handleLogin)
 
 	return r
 }
