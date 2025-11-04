@@ -1,5 +1,12 @@
 package nutrition
 
+type Macros struct {
+	Calories int `json:"calories"`
+	Protein  int `json:"protein"`
+	Carbs    int `json:"carbs"`
+	Fat      int `json:"fat"`
+}
+
 type Meal struct {
 	ID            int         `json:"id"`
 	UserID        int         `json:"user_id"`
@@ -14,16 +21,6 @@ type MealItem struct {
 	ID       int    `json:"id"`
 	MealID   int    `json:"meal_id"`
 	Name     string `json:"name"`
-	Calories int    `json:"calories"`
-	Protein  int    `json:"protein"`
-	Carbs    int    `json:"carbs"`
-	Fat      int    `json:"fat"`
+	Macros
 }
 
-type NutritionGoals struct {
-	Calories int `json:"calories"`
-	Protein  int `json:"protein"`
-	Carbs    int `json:"carbs"`
-	Fat      int `json:"fat"`
-	// Water Intake?
-}
