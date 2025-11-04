@@ -50,6 +50,8 @@ func InitDB() *sql.DB {
 		user_id INTEGER UNIQUE,
 		calories_target INTEGER,
 		protein_target INTEGER,
+		carbs_target INTEGER,
+		fat_target INTEGER,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 	`)

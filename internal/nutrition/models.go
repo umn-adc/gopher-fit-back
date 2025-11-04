@@ -19,3 +19,11 @@ type MealItem struct {
 	Carbs    int    `json:"carbs"`
 	Fat      int    `json:"fat"`
 }
+
+type NutritionGoals struct {
+	Calories int `json:"calories"`
+	Protein  int `json:"protein"`
+	Carbs    int `json:"carbs"`
+	Fat      int `json:"fat"`
+	// Water Intake?
+}
