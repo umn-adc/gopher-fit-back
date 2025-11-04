@@ -9,6 +9,7 @@ import (
 	// "gopherfit/internal/auth"
 	// "gopherfit/internal/workouts"
 	"gopherfit/internal/nutrition"
+	"gopherfit/internal/workouts"
 	// "gopherfit/internal/social"
 	"gopherfit/internal/db"
 )
@@ -26,7 +27,10 @@ func main() {
 	baseMux.Handle("/example/", example.GetServeMux())
 
 	nutritionHandler := nutrition.NewHandler(conn)
+	workoutsHandler := workouts.NewHandler(conn)
+	
 	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
+	baseMux.Handle("/workouts/", workoutsHandler.RegisterRoutes())
 
 	println("Listening on port: 3000")
 	http.ListenAndServe("localhost:3000", baseMux)
