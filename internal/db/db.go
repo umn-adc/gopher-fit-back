@@ -58,6 +58,36 @@ func InitDB() *sql.DB {
 		protein_target INTEGER,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
+
+	CREATE TABlE IF NOT EXISTS goals (
+		goal TEXT NOT NULL CHECK(goal IN ('Lose Weight', 'Build Muscle', 'Increase Endurance', 'Improve Flexibility',
+											'General Fitness', 'Athletic Performance', 'Rehab/Recovery', 'Maintain Weight')),
+		details TEXT,
+		PRIMARY KEY (goal)
+	);
+
+	CREATE TABLE IF NOT EXISTS user_goals (
+		user_id INTEGER NOT NULL,
+		goal TEXT NOT NULL,
+		PRIMARY KEY (user_id, goal),
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (goal) REFERENCES goals(goal) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS sports (
+		sport TEXT NOT NULL CHECK(sport IN ('Football', 'Basketball', 'Hockey', 'Soccer', 'Volleyball',
+											'Baseball', 'Softball', 'Track & Field', 'Swimming', 'Wrestling',
+											'Gymnastics', 'Martial Arts')),
+		PRIMARY KEY (sport)
+	);
+
+	CREATE TABLE IF NOT EXISTS user_sports (
+		user_id INTEGER NOT NULL,
+		sport TEXT NOT NULL,
+		PRIMARY KEY (user_id, sport),
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (sport) REFERENCES sports(sport) ON DELETE CASCADE
+	);
 	`)
 
 	if err != nil {
