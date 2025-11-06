@@ -21,6 +21,16 @@ type User struct {
 	Password string `json:"password,omitempty"`
 }
 
+type UserDetails struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Age      int    `json:"age"`
+	Height   int    `json:"height"`
+	Weight   int    `json:"weight"`
+	Gender   string `json:"gender"`
+	ActivityLevel string `json:"activity_level"`
+}
+
 type Claims struct {
 	ID int
 	Username string

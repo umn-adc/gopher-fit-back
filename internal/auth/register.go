@@ -12,7 +12,12 @@ import (
 // Creates a user in database after receiving a unique username
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var user User
+	var userDetails UserDetails
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusInternalServerError)
+		return
+	}
+	if err := json.NewDecoder(r.Body).Decode(&userDetails); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusInternalServerError)
 		return
 	}
@@ -54,6 +59,9 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Issue with creating JWT token", http.StatusInternalServerError)
 		return
 	}
+
+	// Insert details into DB
+	DB.Exec(`INSERT INTO `)
 
 	// Create our response and send as JSON
 	response := struct {

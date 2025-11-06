@@ -20,13 +20,18 @@ func InitDB() *sql.DB {
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
+        password TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_details (
+		user_id INTEGER PRIMARY KEY,
         name TEXT,
         age INTEGER,
         height INTEGER,
         weight INTEGER,
         gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
-        activity_level TEXT CHECK(activity_level IN ('Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extra Active'))
+        activity_level TEXT CHECK(activity_level IN ('Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extra Active')),
+		FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
 	CREATE TABLE IF NOT EXISTS meals (
@@ -65,6 +70,9 @@ func InitDB() *sql.DB {
 		details TEXT,
 		PRIMARY KEY (goal)
 	);
+	INSERT INTO goals (goal) VALUES
+		('Lose Weight'), ('Build Muscle'), ('Increase Endurance'), ('Improve Flexibility'),
+		('General Fitness'), ('Athletic Performance'), ('Rehab/Recovery'), ('Maintain Weight');
 
 	CREATE TABLE IF NOT EXISTS user_goals (
 		user_id INTEGER NOT NULL,
@@ -80,6 +88,10 @@ func InitDB() *sql.DB {
 											'Gymnastics', 'Martial Arts')),
 		PRIMARY KEY (sport)
 	);
+	INSERT INTO sports (sport) VALUES
+		('Football'), ('Basketball'), ('Hockey'), ('Soccer'), ('Volleyball'),
+		('Baseball'), ('Softball'), ('Track & Field'), ('Swimming'), ('Wrestling'),
+		('Gymnastics'), ('Martial Arts');
 
 	CREATE TABLE IF NOT EXISTS user_sports (
 		user_id INTEGER NOT NULL,
