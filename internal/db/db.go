@@ -17,11 +17,17 @@ func InitDB() *sql.DB {
 	}
 
 	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE,
-		password TEXT
-	);
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT,
+        age INTEGER,
+        height INTEGER,
+        weight INTEGER,
+        gender TEXT CHECK (gender IN ('Male', 'Female', 'Other')),
+        activity_level TEXT CHECK(activity_level IN ('Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extra Active'))
+    );
 
 	CREATE TABLE IF NOT EXISTS meals (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
