@@ -7,7 +7,6 @@ func GetServeMux() *http.ServeMux {
 
 	// SET UP YOUR ENDPOINTS HERE
 	// mux.HandleFunc("GET /practice/some_endpoint", yourFunction)
-	
 
 	return mux
 }
