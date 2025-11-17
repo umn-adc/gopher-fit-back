@@ -12,12 +12,7 @@ import (
 // Creates a user in database after receiving a unique username
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var user User
-	var userDetails UserDetails
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusInternalServerError)
-		return
-	}
-	if err := json.NewDecoder(r.Body).Decode(&userDetails); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusInternalServerError)
 		return
 	}
@@ -34,24 +29,48 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create user, insert user details, sports, and goals
 	DB := h.DB
 	res, err := DB.Exec(`INSERT INTO users (username, password)
 				VALUES (?, ?)
 	`, user.Username, hashedPasswd)
-
-	// Error with insertion
 	if err != nil {
 		http.Error(w, "Issue with User Signup", http.StatusInternalServerError)
 		return
 	}
-
 	id, err := res.LastInsertId()
 	if err != nil {
 		http.Error(w, "Issue with retrieving user ID", http.StatusInternalServerError)
 		return
 	}
-
 	user.ID = int(id)
+	res, err = DB.Exec(`INSERT INTO user_details (user_id, name, age, height, weight, gender, activity_level)
+				VALUES (?, ?, ?, ?, ?, ?, ?);
+	`, user.ID, user.Name, user.Age, user.Height, user.Weight, user.Gender, user.ActivityLevel)
+	if err != nil {
+		http.Error(w, "Issue with creating user details" + err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, sport := range user.Sports {
+		res, err = DB.Exec(`INSERT INTO user_sports (user_id, sport)
+		VALUES (?, ?);
+		`, user.ID, sport)
+		if err != nil {
+			http.Error(w, "Issue with creating user sports", http.StatusInternalServerError)
+			return
+		}
+	}
+	for _, goal := range user.Goals {
+		res, err = DB.Exec(`INSERT INTO user_goals (user_id, goal)
+		VALUES (?, ?);
+		`, user.ID, goal)
+		if err != nil {
+			http.Error(w, "Issue with creating user goals", http.StatusInternalServerError)
+			return
+		}
+	}
+
+
 
 	// Create jwt based off of the user
 	tokenString, err := createToken(user)
@@ -59,9 +78,6 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Issue with creating JWT token", http.StatusInternalServerError)
 		return
 	}
-
-	// Insert details into DB
-	DB.Exec(`INSERT INTO `)
 
 	// Create our response and send as JSON
 	response := struct {
