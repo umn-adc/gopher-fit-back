@@ -13,6 +13,7 @@ import (
 	"gopherfit/internal/workouts"
 	// "gopherfit/internal/social"
 	"gopherfit/internal/db"
+	"gopherfit/internal/middleware"
 )
 
 func main() {
@@ -25,14 +26,14 @@ func main() {
 
 	// the baseMux will mainly be used like this
 	baseMux.Handle("/practice/", practice.GetServeMux())
-	baseMux.Handle("/example/", example.GetServeMux())
+	baseMux.Handle("/example/", middleware.JWTMiddleware(example.GetServeMux()))
 
 	authHandler := auth.NewHandler(conn)
 	baseMux.Handle("/auth/", authHandler.RegisterRoutes())
 
 	nutritionHandler := nutrition.NewHandler(conn)
 	workoutsHandler := workouts.NewHandler(conn)
-	
+
 	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
 	baseMux.Handle("/workouts/", workoutsHandler.RegisterRoutes())
 

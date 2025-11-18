@@ -3,6 +3,7 @@ package example
 import (
 	"fmt"
 	"net/http"
+	"gopherfit/internal/middleware"
 )
 
 func GetServeMux() *http.ServeMux {
@@ -15,14 +16,15 @@ func GetServeMux() *http.ServeMux {
 }
 
 func handleHelloWorld(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
+	name := r.Context().Value(middleware.CtxUsernameKey)
+	id := r.Context().Value(middleware.CtxUserIDKey)
 	switch name {
 	case "":
 		http.Error(w, "must say your name", http.StatusBadRequest)
 	case "none":
 		w.Write([]byte("Hello stranger from /example/hello_world"))
 	default:
-		fmt.Fprintf(w, "Hello %s from /example/hello_world", name)
+		fmt.Fprintf(w, "Hello %s with id %d from /example/hello_world", name, id)
 	}
 }
 
