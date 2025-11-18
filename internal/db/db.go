@@ -52,6 +52,15 @@ func InitDB() *sql.DB {
 		protein_target INTEGER,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS friends (
+    user_id   INTEGER NOT NULL,
+    friend_id INTEGER NOT NULL,
+    PRIMARY KEY (user_id, friend_id),
+    FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
+);
+);
 	`)
 
 	if err != nil {
