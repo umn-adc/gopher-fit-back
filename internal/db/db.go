@@ -83,6 +83,31 @@ func OpenDB() (*sql.DB, error) {
 		protein_target INTEGER,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS workouts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER UNIQUE,
+		workout_name TEXT,
+		duration INTEGER,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS workout_item (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		workout_id INTEGER,
+		user_id INTEGER,
+		exercise_name TEXT,
+
+		sets INTEGER,
+		reps INTEGER,
+		weight REAL,
+
+		duration_minutes REAL,
+		distance REAL,
+
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
+	);
 	`)
 
 	// Default test user: goldy / pass123
