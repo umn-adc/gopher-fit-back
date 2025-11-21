@@ -64,6 +64,32 @@ func InitDB() *sql.DB {
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 
+	CREATE TABLE IF NOT EXISTS workouts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER UNIQUE,
+		workout_name TEXT,
+		duration INTEGER,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS workout_item (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		workout_id INTEGER,
+		user_id INTEGER,
+		exercise_name TEXT,
+
+		sets INTEGER,
+		reps INTEGER,
+		weight REAL,
+
+		duration_minutes REAL,
+		distance REAL,
+
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
+	);
+	`)
+
 	CREATE TABlE IF NOT EXISTS goals (
 		goal TEXT NOT NULL CHECK(goal IN ('Lose Weight', 'Build Muscle', 'Increase Endurance', 'Improve Flexibility',
 											'General Fitness', 'Athletic Performance', 'Rehab/Recovery', 'Maintain Weight')),
