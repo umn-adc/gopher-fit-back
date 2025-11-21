@@ -88,7 +88,6 @@ func InitDB() *sql.DB {
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
 	);
-	`)
 
 	CREATE TABlE IF NOT EXISTS goals (
 		goal TEXT NOT NULL CHECK(goal IN ('Lose Weight', 'Build Muscle', 'Increase Endurance', 'Improve Flexibility',
