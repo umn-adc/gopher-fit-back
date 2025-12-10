@@ -5,6 +5,7 @@ import (
 
 	"gopherfit/endpoints/example"
 	"gopherfit/endpoints/practice"
+	"gopherfit/endpoints/user"
 
 	// "gopherfit/internal/auth"
 	// "gopherfit/internal/workouts"
@@ -24,10 +25,11 @@ func main() {
 	// the baseMux will mainly be used like this
 	baseMux.Handle("/practice/", practice.GetServeMux())
 	baseMux.Handle("/example/", example.GetServeMux())
+	baseMux.Handle("/user/", user.GetServeMux())
 
 	nutritionHandler := nutrition.NewHandler(conn)
 	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
-	
+
 	// temporary example of defining an endpoint directly on the baseMux
 	baseMux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -11,7 +11,7 @@ func dontyellplz(w http.ResponseWriter, r *http.Request) {
 	if Name == "" {
 		http.Error(w, "You did not write your name, so you did it wrong", http.StatusBadRequest)
 	} else {
-		fmt.Fprintf(w, "Hello %s", Name)
+		fmt.Fprintf(w, "Hello, you're bald %s", Name)
 	}
 
 }
