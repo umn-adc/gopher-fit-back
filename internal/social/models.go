@@ -1,8 +1,9 @@
 package social
 
+// LeaderboardEntry represents a user's position on the leaderboard
 type LeaderboardEntry struct {
-	UserID      int     `json:"user_id"`
-	Username    string  `json:"username"`
-	Score       int     `json:"score"`   // Placeholder for whatever metric we chose
-	Rank        int     `json:"rank"`
+	UserID   int    `json:"user_id" example:"1"`
+	Username string `json:"username" example:"alice"`
+	Score    int    `json:"score" example:"250"`
+	Rank     int    `json:"rank" example:"1"`
 }

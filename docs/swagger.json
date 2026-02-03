@@ -1,0 +1,1068 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Fitness tracking API for workouts, nutrition, and user profiles",
+        "title": "GopherFit API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/",
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login user",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/auth.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register new user",
+                "parameters": [
+                    {
+                        "description": "Registration details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/auth.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/macros": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Get macro goals",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MacroGoals"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Update macro goals",
+                "parameters": [
+                    {
+                        "description": "Macro goals",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MacroGoals"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MacroGoals"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/meals": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Get user meals",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/nutrition.Meal"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Create a meal",
+                "parameters": [
+                    {
+                        "description": "Meal data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.Meal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.Meal"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/meals/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Get meal by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Meal ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.Meal"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Update meal",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Meal ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Meal data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.Meal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.Meal"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Delete meal",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Meal ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/nutrition/meals/{id}/items": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Add item to meal",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Meal ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Meal item data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MealItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MealItem"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/meals/{id}/items/{itemId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Update meal item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Meal ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Item ID",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Meal item data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MealItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/nutrition.MealItem"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Delete meal item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Meal ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Item ID",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/profile/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/profile.Profile"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Update user profile",
+                "parameters": [
+                    {
+                        "description": "Profile data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/profile.Profile"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/profile.Profile"
+                        }
+                    }
+                }
+            }
+        },
+        "/social/leaderboard": {
+            "get": {
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get leaderboard",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.LeaderboardEntry"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get user workouts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/workouts.Workout"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Create a workout",
+                "parameters": [
+                    {
+                        "description": "Workout data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workouts.Workout"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/workouts.Workout"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Get workout by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/workouts.Workout"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Update workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Workout data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workouts.Workout"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/workouts.Workout"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Delete workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/items": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Add exercise to workout",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Exercise data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workouts.WorkoutItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/workouts.WorkoutItem"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{id}/items/{itemId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Update exercise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Item ID",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Exercise data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workouts.WorkoutItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/workouts.WorkoutItem"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "workouts"
+                ],
+                "summary": "Delete exercise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Item ID",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "auth.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "UserID": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIs..."
+                },
+                "username": {
+                    "type": "string",
+                    "example": "johndoe"
+                }
+            }
+        },
+        "auth.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "MyP@ssw0rd!"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "gopher"
+                }
+            }
+        },
+        "auth.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "activity_level": {
+                    "type": "string",
+                    "enum": [
+                        "Sedentary",
+                        "Lightly Active",
+                        "Moderately Active",
+                        "Very Active",
+                        "Extra Active"
+                    ],
+                    "example": "Moderately Active"
+                },
+                "age": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "Male",
+                        "Female",
+                        "Other"
+                    ],
+                    "example": "Male"
+                },
+                "goals": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Build Muscle",
+                        "Lose Weight"
+                    ]
+                },
+                "height": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Mr. Fit"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "MyP@ssw0rd!"
+                },
+                "sports": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Basketball",
+                        "Football"
+                    ]
+                },
+                "username": {
+                    "type": "string",
+                    "example": "gopher"
+                },
+                "weight": {
+                    "type": "integer",
+                    "example": 75
+                }
+            }
+        },
+        "nutrition.MacroGoals": {
+            "type": "object",
+            "properties": {
+                "calories_target": {
+                    "type": "integer",
+                    "example": 2000
+                },
+                "carbs_target": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "fat_target": {
+                    "type": "integer",
+                    "example": 65
+                },
+                "protein_target": {
+                    "type": "integer",
+                    "example": 150
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "nutrition.Meal": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2024-01-15"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/nutrition.MealItem"
+                    }
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": [
+                        "Breakfast",
+                        "Lunch",
+                        "Dinner",
+                        "Snack"
+                    ],
+                    "example": "Lunch"
+                },
+                "time": {
+                    "type": "string",
+                    "example": "12:30"
+                },
+                "total_calories": {
+                    "type": "integer",
+                    "example": 650
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "nutrition.MealItem": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "example": 300
+                },
+                "carbs": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "fat": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "meal_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Grilled Chicken"
+                },
+                "protein": {
+                    "type": "integer",
+                    "example": 35
+                }
+            }
+        },
+        "profile.Profile": {
+            "type": "object",
+            "properties": {
+                "activity_level": {
+                    "type": "string",
+                    "enum": [
+                        "Sedentary",
+                        "Lightly Active",
+                        "Moderately Active",
+                        "Very Active",
+                        "Extra Active"
+                    ],
+                    "example": "Moderately Active"
+                },
+                "age": {
+                    "type": "integer",
+                    "example": 25
+                },
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "Male",
+                        "Female",
+                        "Other"
+                    ],
+                    "example": "Male"
+                },
+                "goals": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Build Muscle",
+                        "Lose Weight"
+                    ]
+                },
+                "height": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "sports": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Basketball",
+                        "Football"
+                    ]
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "weight": {
+                    "type": "integer",
+                    "example": 75
+                }
+            }
+        },
+        "social.LeaderboardEntry": {
+            "type": "object",
+            "properties": {
+                "rank": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "score": {
+                    "type": "integer",
+                    "example": 250
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "username": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            }
+        },
+        "workouts.Workout": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/workouts.WorkoutItem"
+                    }
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "workout_name": {
+                    "type": "string",
+                    "example": "Morning Strength Training"
+                }
+            }
+        },
+        "workouts.WorkoutItem": {
+            "type": "object",
+            "properties": {
+                "duration_minutes": {
+                    "type": "number",
+                    "example": 5
+                },
+                "exercise_name": {
+                    "type": "string",
+                    "example": "Bench Press"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "reps": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "sets": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "weight": {
+                    "type": "number",
+                    "example": 135.5
+                },
+                "workout_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Enter your JWT token with the Bearer prefix, e.g. \"Bearer eyJhbG...\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

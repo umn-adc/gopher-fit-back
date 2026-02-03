@@ -1,4 +1,4 @@
-package social
+package profile
 
 import (
 	"database/sql"
@@ -16,7 +16,8 @@ func NewHandler(db *sql.DB) *Handler {
 func (h *Handler) RegisterRoutes() *http.ServeMux {
 	r := http.NewServeMux()
 
-	r.HandleFunc("GET /social/leaderboard", h.getLeaderboard)
+	r.HandleFunc("GET /profile/", h.handleGetProfile)
+	r.HandleFunc("PUT /profile/", h.handleUpdateProfile)
 
 	return r
 }

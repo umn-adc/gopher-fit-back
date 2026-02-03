@@ -5,56 +5,47 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"gopherfit/internal/api"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
-// handleLogin handles POST /api/auth/login requests.
+// @Summary Login user
+// @Tags auth
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} AuthResponse
+// @Router /auth/login [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
-	// Read in username and password from JSON
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
 		return
 	}
-
-	DB := h.DB
 
 	var hashPasswd string
-	if err := DB.QueryRow(`SELECT id, password FROM users
-		WHERE username=?
-	`, user.Username).Scan(&user.ID, &hashPasswd); err != nil {
+	if err := h.DB.QueryRow(`SELECT id, password FROM users WHERE username=?`, user.Username).Scan(&user.ID, &hashPasswd); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Non-existant user", http.StatusNotFound)
+			api.WriteError(w, http.StatusNotFound, "User not found", nil)
 			return
 		}
-		http.Error(w, "Error reading user", http.StatusInternalServerError)
+		api.WriteError(w, http.StatusInternalServerError, "Error reading user", err)
 		return
 	}
 
-	// Invalid password
 	if err := bcrypt.CompareHashAndPassword([]byte(hashPasswd), []byte(user.Password)); err != nil {
-		http.Error(w, "Invalid Password", http.StatusUnauthorized)
+		api.WriteError(w, http.StatusUnauthorized, "Invalid password", nil)
 		return
 	}
 
-	// Valid user
 	tokenString, err := createToken(user)
 	if err != nil {
-		http.Error(w, "Error creating token", http.StatusInternalServerError)
+		api.WriteError(w, http.StatusInternalServerError, "Error creating token", err)
 		return
 	}
 
-	// Create our response
-	response := struct {
-		Token string `json:"token"`
-		UserID  int
-		Username string `json:"username"`
-	}{
-		Token: tokenString,
-		UserID: user.ID,
-		Username: user.Username,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	api.WriteSuccess(w, http.StatusOK, map[string]any{
+		"token":    tokenString,
+		"user_id":  user.ID,
+		"username": user.Username,
+	})
 }
