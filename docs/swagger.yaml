@@ -1,0 +1,694 @@
+basePath: /
+definitions:
+  auth.AuthResponse:
+    properties:
+      UserID:
+        example: 1
+        type: integer
+      token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      password:
+        example: MyP@ssw0rd!
+        type: string
+      username:
+        example: gopher
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      activity_level:
+        enum:
+        - Sedentary
+        - Lightly Active
+        - Moderately Active
+        - Very Active
+        - Extra Active
+        example: Moderately Active
+        type: string
+      age:
+        example: 25
+        type: integer
+      gender:
+        enum:
+        - Male
+        - Female
+        - Other
+        example: Male
+        type: string
+      goals:
+        example:
+        - Build Muscle
+        - Lose Weight
+        items:
+          type: string
+        type: array
+      height:
+        example: 180
+        type: integer
+      name:
+        example: Mr. Fit
+        type: string
+      password:
+        example: MyP@ssw0rd!
+        type: string
+      sports:
+        example:
+        - Basketball
+        - Football
+        items:
+          type: string
+        type: array
+      username:
+        example: gopher
+        type: string
+      weight:
+        example: 75
+        type: integer
+    type: object
+  nutrition.MacroGoals:
+    properties:
+      calories_target:
+        example: 2000
+        type: integer
+      carbs_target:
+        example: 200
+        type: integer
+      fat_target:
+        example: 65
+        type: integer
+      protein_target:
+        example: 150
+        type: integer
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  nutrition.Meal:
+    properties:
+      date:
+        example: "2024-01-15"
+        type: string
+      id:
+        example: 1
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/nutrition.MealItem'
+        type: array
+      meal_type:
+        enum:
+        - Breakfast
+        - Lunch
+        - Dinner
+        - Snack
+        example: Lunch
+        type: string
+      time:
+        example: "12:30"
+        type: string
+      total_calories:
+        example: 650
+        type: integer
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  nutrition.MealItem:
+    properties:
+      calories:
+        example: 300
+        type: integer
+      carbs:
+        example: 5
+        type: integer
+      fat:
+        example: 12
+        type: integer
+      id:
+        example: 1
+        type: integer
+      meal_id:
+        example: 1
+        type: integer
+      name:
+        example: Grilled Chicken
+        type: string
+      protein:
+        example: 35
+        type: integer
+    type: object
+  profile.Profile:
+    properties:
+      activity_level:
+        enum:
+        - Sedentary
+        - Lightly Active
+        - Moderately Active
+        - Very Active
+        - Extra Active
+        example: Moderately Active
+        type: string
+      age:
+        example: 25
+        type: integer
+      gender:
+        enum:
+        - Male
+        - Female
+        - Other
+        example: Male
+        type: string
+      goals:
+        example:
+        - Build Muscle
+        - Lose Weight
+        items:
+          type: string
+        type: array
+      height:
+        example: 180
+        type: integer
+      name:
+        example: John Doe
+        type: string
+      sports:
+        example:
+        - Basketball
+        - Football
+        items:
+          type: string
+        type: array
+      user_id:
+        example: 1
+        type: integer
+      weight:
+        example: 75
+        type: integer
+    type: object
+  social.LeaderboardEntry:
+    properties:
+      rank:
+        example: 1
+        type: integer
+      score:
+        example: 250
+        type: integer
+      user_id:
+        example: 1
+        type: integer
+      username:
+        example: alice
+        type: string
+    type: object
+  workouts.Workout:
+    properties:
+      duration:
+        example: 60
+        type: integer
+      id:
+        example: 1
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/workouts.WorkoutItem'
+        type: array
+      user_id:
+        example: 1
+        type: integer
+      workout_name:
+        example: Morning Strength Training
+        type: string
+    type: object
+  workouts.WorkoutItem:
+    properties:
+      duration_minutes:
+        example: 5
+        type: number
+      exercise_name:
+        example: Bench Press
+        type: string
+      id:
+        example: 1
+        type: integer
+      reps:
+        example: 10
+        type: integer
+      sets:
+        example: 3
+        type: integer
+      weight:
+        example: 135.5
+        type: number
+      workout_id:
+        example: 1
+        type: integer
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: Fitness tracking API for workouts, nutrition, and user profiles
+  title: GopherFit API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+      summary: Login user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+      summary: Register new user
+      tags:
+      - auth
+  /nutrition/macros:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nutrition.MacroGoals'
+      security:
+      - BearerAuth: []
+      summary: Get macro goals
+      tags:
+      - nutrition
+    put:
+      parameters:
+      - description: Macro goals
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/nutrition.MacroGoals'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nutrition.MacroGoals'
+      security:
+      - BearerAuth: []
+      summary: Update macro goals
+      tags:
+      - nutrition
+  /nutrition/meals:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/nutrition.Meal'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get user meals
+      tags:
+      - nutrition
+    post:
+      parameters:
+      - description: Meal data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/nutrition.Meal'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/nutrition.Meal'
+      security:
+      - BearerAuth: []
+      summary: Create a meal
+      tags:
+      - nutrition
+  /nutrition/meals/{id}:
+    delete:
+      parameters:
+      - description: Meal ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete meal
+      tags:
+      - nutrition
+    get:
+      parameters:
+      - description: Meal ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nutrition.Meal'
+      security:
+      - BearerAuth: []
+      summary: Get meal by ID
+      tags:
+      - nutrition
+    put:
+      parameters:
+      - description: Meal ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Meal data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/nutrition.Meal'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nutrition.Meal'
+      security:
+      - BearerAuth: []
+      summary: Update meal
+      tags:
+      - nutrition
+  /nutrition/meals/{id}/items:
+    post:
+      parameters:
+      - description: Meal ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Meal item data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/nutrition.MealItem'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/nutrition.MealItem'
+      security:
+      - BearerAuth: []
+      summary: Add item to meal
+      tags:
+      - nutrition
+  /nutrition/meals/{id}/items/{itemId}:
+    delete:
+      parameters:
+      - description: Meal ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete meal item
+      tags:
+      - nutrition
+    put:
+      parameters:
+      - description: Meal ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemId
+        required: true
+        type: integer
+      - description: Meal item data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/nutrition.MealItem'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nutrition.MealItem'
+      security:
+      - BearerAuth: []
+      summary: Update meal item
+      tags:
+      - nutrition
+  /profile/:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/profile.Profile'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - profile
+    put:
+      parameters:
+      - description: Profile data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/profile.Profile'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/profile.Profile'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - profile
+  /social/leaderboard:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.LeaderboardEntry'
+            type: array
+      summary: Get leaderboard
+      tags:
+      - social
+  /workouts/:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/workouts.Workout'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get user workouts
+      tags:
+      - workouts
+    post:
+      parameters:
+      - description: Workout data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workouts.Workout'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/workouts.Workout'
+      security:
+      - BearerAuth: []
+      summary: Create a workout
+      tags:
+      - workouts
+  /workouts/{id}:
+    delete:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete workout
+      tags:
+      - workouts
+    get:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workouts.Workout'
+      security:
+      - BearerAuth: []
+      summary: Get workout by ID
+      tags:
+      - workouts
+    put:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Workout data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workouts.Workout'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workouts.Workout'
+      security:
+      - BearerAuth: []
+      summary: Update workout
+      tags:
+      - workouts
+  /workouts/{id}/items:
+    post:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Exercise data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workouts.WorkoutItem'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/workouts.WorkoutItem'
+      security:
+      - BearerAuth: []
+      summary: Add exercise to workout
+      tags:
+      - workouts
+  /workouts/{id}/items/{itemId}:
+    delete:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete exercise
+      tags:
+      - workouts
+    put:
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemId
+        required: true
+        type: integer
+      - description: Exercise data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workouts.WorkoutItem'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workouts.WorkoutItem'
+      security:
+      - BearerAuth: []
+      summary: Update exercise
+      tags:
+      - workouts
+securityDefinitions:
+  BearerAuth:
+    description: Enter your JWT token with the Bearer prefix, e.g. "Bearer eyJhbG..."
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

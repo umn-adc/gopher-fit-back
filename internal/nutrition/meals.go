@@ -1,24 +1,28 @@
 package nutrition
 
 import (
-	"net/http"
 	"encoding/json"
+	"net/http"
+
+	"gopherfit/internal/api"
+	"gopherfit/internal/middleware"
 )
 
-// TODO:
-// Add JWT authorization. 
-// All functions should verify that the user is only editing/getting their information.
-
+// @Summary Get user meals
+// @Tags nutrition
+// @Security BearerAuth
+// @Success 200 {array} Meal
+// @Router /nutrition/meals [get]
 func (h *Handler) getUserMeals(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("user_id")
-	if userID == "" {
-		http.Error(w, "user_id required", http.StatusBadRequest)
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
 	rows, err := h.DB.Query("SELECT * FROM meals WHERE user_id = ?", userID)
 	if err != nil {
-		http.Error(w, "failed to fetch meals", http.StatusInternalServerError)
+		api.WriteError(w, http.StatusInternalServerError, "failed to fetch meals", err)
 		return
 	}
 	defer rows.Close()
@@ -30,15 +34,25 @@ func (h *Handler) getUserMeals(w http.ResponseWriter, r *http.Request) {
 		meals = append(meals, m)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(meals)
+	api.WriteSuccess(w, http.StatusOK, meals)
 }
 
+// @Summary Create a meal
+// @Tags nutrition
+// @Security BearerAuth
+// @Param request body Meal true "Meal data"
+// @Success 201 {object} Meal
+// @Router /nutrition/meals [post]
 func (h *Handler) addMeal(w http.ResponseWriter, r *http.Request) {
-	var meal Meal
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
 
+	var meal Meal
 	if err := json.NewDecoder(r.Body).Decode(&meal); err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		api.WriteError(w, http.StatusBadRequest, "invalid JSON", err)
 		return
 	}
 
@@ -47,29 +61,32 @@ func (h *Handler) addMeal(w http.ResponseWriter, r *http.Request) {
 		VALUES (?, ?, ?, ?, ?);
 	`
 	_, err := h.DB.Exec(query,
-		meal.UserID,
+		userID,
 		meal.Date,
 		meal.MealType,
 		meal.Time,
 		meal.TotalCalories,
 	)
 	if err != nil {
-		http.Error(w, "failed to insert meal", http.StatusInternalServerError)
+		api.WriteError(w, http.StatusInternalServerError, "failed to insert meal", err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Meal added successfully",
-	})
+	api.WriteSuccess(w, http.StatusCreated, map[string]string{"message": "Meal added successfully"})
 }
 
+// @Summary Add item to meal
+// @Tags nutrition
+// @Security BearerAuth
+// @Param id path int true "Meal ID"
+// @Param request body MealItem true "Meal item data"
+// @Success 201 {object} MealItem
+// @Router /nutrition/meals/{id}/items [post]
 func (h *Handler) addMealItem(w http.ResponseWriter, r *http.Request) {
 	var mealItem MealItem
 
 	if err := json.NewDecoder(r.Body).Decode(&mealItem); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		api.WriteError(w, http.StatusBadRequest, "invalid JSON", err)
 		return
 	}
 
@@ -86,13 +103,40 @@ func (h *Handler) addMealItem(w http.ResponseWriter, r *http.Request) {
 		mealItem.Fat,
 	)
 	if err != nil {
-		http.Error(w, "failed to insert meal item", http.StatusInternalServerError)
+		api.WriteError(w, http.StatusInternalServerError, "failed to insert meal item", err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Meal item added successfully",
-	})
+	api.WriteSuccess(w, http.StatusCreated, map[string]string{"message": "Meal item added successfully"})
+}
+
+// @Summary Get meal by ID
+// @Tags nutrition
+// @Security BearerAuth
+// @Param id path int true "Meal ID"
+// @Success 200 {object} Meal
+// @Router /nutrition/meals/{id} [get]
+func (h *Handler) getMeal(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement
+}
+
+// @Summary Update meal
+// @Tags nutrition
+// @Security BearerAuth
+// @Param id path int true "Meal ID"
+// @Param request body Meal true "Meal data"
+// @Success 200 {object} Meal
+// @Router /nutrition/meals/{id} [put]
+func (h *Handler) updateMeal(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement
+}
+
+// @Summary Delete meal
+// @Tags nutrition
+// @Security BearerAuth
+// @Param id path int true "Meal ID"
+// @Success 204 "No Content"
+// @Router /nutrition/meals/{id} [delete]
+func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement
 }

@@ -3,40 +3,56 @@ package main
 import (
 	"net/http"
 
-	"gopherfit/endpoints/example"
-	"gopherfit/endpoints/practice"
 	"gopherfit/internal/auth"
-
-	// "gopherfit/internal/auth"
-	// "gopherfit/internal/workouts"
-	"gopherfit/internal/nutrition"
-	"gopherfit/internal/workouts"
-	// "gopherfit/internal/social"
 	"gopherfit/internal/db"
 	"gopherfit/internal/middleware"
+	"gopherfit/internal/nutrition"
+	"gopherfit/internal/profile"
+	"gopherfit/internal/social"
+	"gopherfit/internal/workouts"
+
+	_ "gopherfit/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title GopherFit API
+// @version 1.0
+// @description Fitness tracking API for workouts, nutrition, and user profiles
+// @host localhost:3000
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter your JWT token with the Bearer prefix, e.g. "Bearer eyJhbG..."
 func main() {
 	// Initialize the database
 	conn := db.InitDB()
 	defer conn.Close()
 
-	// here is the base mux
 	baseMux := http.NewServeMux()
 
-	// the baseMux will mainly be used like this
-	baseMux.Handle("/practice/", practice.GetServeMux())
-	baseMux.Handle("/example/", middleware.JWTMiddleware(example.GetServeMux()))
-
+	// Auth handler (no JWT middleware needed)
 	authHandler := auth.NewHandler(conn)
 	baseMux.Handle("/auth/", authHandler.RegisterRoutes())
 
+	// Protected handlers (with JWT middleware)
+	profileHandler := profile.NewHandler(conn)
 	nutritionHandler := nutrition.NewHandler(conn)
 	workoutsHandler := workouts.NewHandler(conn)
+	socialHandler := social.NewHandler(conn)
 
-	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
-	baseMux.Handle("/workouts/", workoutsHandler.RegisterRoutes())
+	baseMux.Handle("/profile/", middleware.JWTMiddleware(profileHandler.RegisterRoutes()))
+	baseMux.Handle("/nutrition/", middleware.JWTMiddleware(nutritionHandler.RegisterRoutes()))
+	baseMux.Handle("/workouts/", middleware.JWTMiddleware(workoutsHandler.RegisterRoutes()))
+	baseMux.Handle("/social/", socialHandler.RegisterRoutes())
+
+	// Swagger UI
+	baseMux.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.PersistAuthorization(true),
+	))
 
 	println("Listening on port: 3000")
+	println("Swagger UI: http://localhost:3000/swagger/index.html")
 	http.ListenAndServe("localhost:3000", baseMux)
 }

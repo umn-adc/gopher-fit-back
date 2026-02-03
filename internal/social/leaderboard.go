@@ -1,9 +1,27 @@
 package social
 
-// Re-calculates the leaderboard from the DB every time a user sends a GET request
-// Not scalable, but works for now
-func computeLeaderboard() ([]LeaderboardEntry, error) {
+import (
+	"net/http"
 
+	"gopherfit/internal/api"
+)
+
+// @Summary Get leaderboard
+// @Tags social
+// @Success 200 {array} LeaderboardEntry
+// @Router /social/leaderboard [get]
+func (h *Handler) getLeaderboard(w http.ResponseWriter, r *http.Request) {
+	leaderboard, err := h.computeLeaderboard()
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch leaderboard", err)
+		return
+	}
+
+	api.WriteSuccess(w, http.StatusOK, leaderboard)
+}
+
+func (h *Handler) computeLeaderboard() ([]LeaderboardEntry, error) {
+	// TODO: Implement with real DB queries
 	testData := []LeaderboardEntry{
 		{UserID: 1, Username: "alice", Score: 250, Rank: 1},
 		{UserID: 2, Username: "bob", Score: 200, Rank: 2},
