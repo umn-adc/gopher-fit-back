@@ -9,7 +9,7 @@ import (
 )
 
 func InitDB() *sql.DB {
-	os.Remove("./gopherfit.db") // Reset database
+	// os.Remove("./gopherfit.db") // Reset database
 
 	db, err := sql.Open("sqlite", "./gopherfit.db")
 	if err != nil {
