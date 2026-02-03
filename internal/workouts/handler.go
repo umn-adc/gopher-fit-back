@@ -1,9 +1,20 @@
 package workouts
 
-import "net/http"
+import (
+	"net/http"
+	"database/sql" 
+)
 
-func Register(mux *http.ServeMux) {
-	
+type Handler struct {
+	DB *sql.DB
 }
 
+func NewHandler(db *sql.DB) *Handler {
+	return &Handler{DB: db}
+}
 
+func (h *Handler) RegisterRoutes() *http.ServeMux {
+	r := http.NewServeMux()
+
+	return r
+}

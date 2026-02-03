@@ -5,13 +5,15 @@ import (
 
 	"gopherfit/endpoints/example"
 	"gopherfit/endpoints/practice"
-	"gopherfit/endpoints/user"
+	"gopherfit/internal/auth"
 
 	// "gopherfit/internal/auth"
 	// "gopherfit/internal/workouts"
 	"gopherfit/internal/nutrition"
+	"gopherfit/internal/workouts"
 	// "gopherfit/internal/social"
 	"gopherfit/internal/db"
+	"gopherfit/internal/middleware"
 )
 
 func main() {
@@ -24,17 +26,16 @@ func main() {
 
 	// the baseMux will mainly be used like this
 	baseMux.Handle("/practice/", practice.GetServeMux())
-	baseMux.Handle("/example/", example.GetServeMux())
-	baseMux.Handle("/user/", user.GetServeMux())
+	baseMux.Handle("/example/", middleware.JWTMiddleware(example.GetServeMux()))
+
+	authHandler := auth.NewHandler(conn)
+	baseMux.Handle("/auth/", authHandler.RegisterRoutes())
 
 	nutritionHandler := nutrition.NewHandler(conn)
-	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
+	workoutsHandler := workouts.NewHandler(conn)
 
-	// temporary example of defining an endpoint directly on the baseMux
-	baseMux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"message": "pong"}`))
-	})
+	baseMux.Handle("/nutrition/", nutritionHandler.RegisterRoutes())
+	baseMux.Handle("/workouts/", workoutsHandler.RegisterRoutes())
 
 	println("Listening on port: 3000")
 	http.ListenAndServe("localhost:3000", baseMux)
