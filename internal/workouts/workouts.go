@@ -22,7 +22,6 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Query all workouts for this user
 	rows, err := h.DB.Query(`SELECT id, user_id, workout_name, duration FROM workouts WHERE user_id = ?`, userID)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Error fetching workouts", err)
@@ -30,7 +29,6 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	// Build the list of workouts
 	var workouts []Workout
 	for rows.Next() {
 		var workout Workout
@@ -38,7 +36,6 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 		workouts = append(workouts, workout)
 	}
 
-	// Return empty array instead of null if no workouts
 	if workouts == nil {
 		workouts = []Workout{}
 	}
