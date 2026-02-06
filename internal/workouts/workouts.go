@@ -15,7 +15,35 @@ import (
 // @Success 200 {array} Workout
 // @Router /workouts/ [get]
 func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	// Extract the user ID from the request context (injected by JWT middleware)
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	// Query all workouts for this user
+	rows, err := h.DB.Query(`SELECT id, user_id, workout_name, duration FROM workouts WHERE user_id = ?`, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error fetching workouts", err)
+		return
+	}
+	defer rows.Close()
+
+	// Build the list of workouts
+	var workouts []Workout
+	for rows.Next() {
+		var workout Workout
+		rows.Scan(&workout.ID, &workout.UserID, &workout.WorkoutName, &workout.Duration)
+		workouts = append(workouts, workout)
+	}
+
+	// Return empty array instead of null if no workouts
+	if workouts == nil {
+		workouts = []Workout{}
+	}
+
+	api.WriteSuccess(w, http.StatusOK, workouts)
 }
 
 // @Summary Create a workout
@@ -25,53 +53,7 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {object} Workout
 // @Router /workouts/ [post]
 func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
-	if !ok {
-		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
-		return
-	}
-
-	var workout Workout
-	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
-		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
-		return
-	}
-
-	tx, err := h.DB.Begin()
-	if err != nil {
-		api.WriteError(w, http.StatusInternalServerError, "Error beginning transaction", err)
-		return
-	}
-
-	result, err := tx.Exec(`INSERT INTO workouts (user_id, workout_name, duration) VALUES (?, ?, ?)`,
-		userID, workout.WorkoutName, workout.Duration)
-	if err != nil {
-		tx.Rollback()
-		api.WriteError(w, http.StatusInternalServerError, "Error creating workout", err)
-		return
-	}
-
-	workoutID, err := result.LastInsertId()
-	if err != nil {
-		tx.Rollback()
-		api.WriteError(w, http.StatusInternalServerError, "Error getting workout ID", err)
-		return
-	}
-
-	for _, item := range workout.Items {
-		_, err := tx.Exec(`INSERT INTO workout_item (workout_id, exercise_name, sets, reps, weight, duration_minutes) VALUES (?, ?, ?, ?, ?, ?)`,
-			workoutID, item.ExerciseName, item.Sets, item.Reps, item.Weight, item.DurationMinutes)
-		if err != nil {
-			tx.Rollback()
-			api.WriteError(w, http.StatusInternalServerError, "Error creating workout item", err)
-			return
-		}
-	}
-
-	tx.Commit()
-	workout.ID = int(workoutID)
-	workout.UserID = userID
-	api.WriteSuccess(w, http.StatusCreated, workout)
+	// TODO: Implement
 }
 
 // @Summary Get workout by ID
