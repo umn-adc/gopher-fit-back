@@ -139,4 +139,43 @@ func (h *Handler) updateMeal(w http.ResponseWriter, r *http.Request) {
 // @Router /nutrition/meals/{id} [delete]
 func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 	// TODO: Implement
+	// delete meal and meal items (under meal class)
+
+	//middleware/auth:
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	mealID := r.PathValue("id")
+	if mealID == "" {
+		api.WriteError(w, http.StatusBadRequest, "invalid id", nil)
+		return
+	}
+
+	item_query := `DELETE FROM  meal_items WHERE meal_id = ?`
+
+	_, err := h.DB.Exec(item_query, mealID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to delete meal items", err)
+		return
+	}
+
+	full_query := `DELETE FROM meals WHERE meal_id = ? AND user_id = ?`
+
+	res, err := h.DB.Exec(full_query, mealID, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to delete meal", err)
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		api.WriteError(w, http.StatusNotFound, "meal not found", err)
+
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
 }
