@@ -1,6 +1,8 @@
 package workouts
 
 import (
+	"encoding/json"
+	"gopherfit/internal/api"
 	"net/http"
 )
 
@@ -12,7 +14,34 @@ import (
 // @Success 201 {object} WorkoutItem
 // @Router /workouts/{id}/items [post]
 func (h *Handler) addWorkoutItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+
+	var item WorkoutItem
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		api.WriteError(w, http.StatusBadRequest, "invalid JSON", err)
+		return
+	}
+
+	query := `
+		INSERT INTO workout_item (workout_id, exercise_name, sets, reps, weight, duration)
+		VALUES (?, ?, ?, ?, ?, ?);
+	`
+
+	_, err := h.DB.Exec(query,
+		item.WorkoutID,
+		item.ExerciseName,
+		item.Sets,
+		item.Reps,
+		item.Weight,
+		item.DurationMinutes,
+	)
+
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to insert workout item", err)
+		return
+	}
+
+	api.WriteSuccess(w, http.StatusCreated, map[string]string{"message": "Workout item added successfully"})
+
 }
 
 // @Summary Update exercise
