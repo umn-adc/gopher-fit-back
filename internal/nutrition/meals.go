@@ -141,7 +141,6 @@ func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 	// TODO: Implement
 	// delete meal and meal items (under meal class)
 
-	//middleware/auth:
 	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
 	if !ok {
 		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
