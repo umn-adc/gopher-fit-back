@@ -153,7 +153,7 @@ func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item_query := `DELETE FROM  meal_items WHERE meal_id = ?`
+	item_query := `DELETE FROM  meal_items WHERE meal_id = ? AND user_id = ?`
 
 	_, err := h.DB.Exec(item_query, mealID)
 	if err != nil {
@@ -172,6 +172,7 @@ func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 	rowsAffected, err := res.RowsAffected()
 	if err != nil || rowsAffected == 0 {
 		api.WriteError(w, http.StatusNotFound, "meal not found", err)
+		return
 
 	}
 
