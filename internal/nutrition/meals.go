@@ -153,17 +153,19 @@ func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item_query := `DELETE FROM  meal_items WHERE meal_id = ? AND user_id = ?`
+	// unneeded since meals already has cascade delete for meal_items
 
-	_, err := h.DB.Exec(item_query, mealID)
-	if err != nil {
-		api.WriteError(w, http.StatusInternalServerError, "failed to delete meal items", err)
-		return
-	}
+	// item_query := `DELETE FROM  meal_items WHERE meal_id = ? AND user_id = ?`
 
-	full_query := `DELETE FROM meals WHERE meal_id = ? AND user_id = ?`
+	// _, err := h.DB.Exec(item_query, mealID)
+	// if err != nil {
+	// 	api.WriteError(w, http.StatusInternalServerError, "failed to delete meal items", err)
+	// 	return
+	// }
 
-	res, err := h.DB.Exec(full_query, mealID, userID)
+	query := `DELETE FROM meals WHERE meal_id = ? AND user_id = ?`
+
+	res, err := h.DB.Exec(query, mealID, userID)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "failed to delete meal", err)
 		return
