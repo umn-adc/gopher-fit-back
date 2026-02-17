@@ -3,7 +3,6 @@ package nutrition
 import (
 	"encoding/json"
 	"net/http"
-
 	"gopherfit/internal/api"
 	"gopherfit/internal/middleware"
 )
@@ -152,16 +151,6 @@ func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 		api.WriteError(w, http.StatusBadRequest, "invalid id", nil)
 		return
 	}
-
-	// unneeded since meals already has cascade delete for meal_items
-
-	// item_query := `DELETE FROM  meal_items WHERE meal_id = ? AND user_id = ?`
-
-	// _, err := h.DB.Exec(item_query, mealID)
-	// if err != nil {
-	// 	api.WriteError(w, http.StatusInternalServerError, "failed to delete meal items", err)
-	// 	return
-	// }
 
 	query := `DELETE FROM meals WHERE meal_id = ? AND user_id = ?`
 
