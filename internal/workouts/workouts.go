@@ -21,7 +21,40 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 // @Router /workouts/ [post]
 func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
+		api.WriteError(w, http.StatusBadRequest, "invalid JSON", err)
+		return
+	}
+	var workout Workout
+	query :=`
+		INSERT INTO workouts (UserID, WorkoutName, Duration,)
+		VALUES (?, ?, ?);
+	`
+		_, err := h.DB.Exec(query,
+		UserID,
+		workout.WorkoutName,
+		workout.Duration,
+	)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to create workout", err)
+		return
+	}
+
+	workoutNames, err := h.getWorkoutsNames(userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to fetch workouts", err)
+		return
+	}
+
+	api.WriteSuccess(w, http.StatusCreated, workoutNames)
 }
+
+
 
 // @Summary Get workout by ID
 // @Tags workouts
