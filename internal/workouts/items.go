@@ -3,7 +3,9 @@ package workouts
 import (
 	"encoding/json"
 	"gopherfit/internal/api"
+	"gopherfit/internal/middleware"
 	"net/http"
+	"strconv"
 )
 
 // @Summary Add exercise to workout
@@ -53,7 +55,44 @@ func (h *Handler) addWorkoutItem(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} WorkoutItem
 // @Router /workouts/{id}/items/{itemId} [put]
 func (h *Handler) updateWorkoutItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid workout-item ID", err)
+		return
+	}
+
+	var item WorkoutItem
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+		return
+	}
+
+	result, err := h.DB.Exec(`
+		UPDATE workout_item 
+		SET excercise_name = ?,
+			sets = ?,
+			reps = ?,
+			weight = ?,
+			duration_minutes = ?
+		WHERE id = ? AND workout_id = ?`,
+		item.ExerciseName, item.Sets, item.Reps, item.Weight, item.DurationMinutes, id, item.WorkoutID)
+
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error updating workout", err)
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		api.WriteError(w, http.StatusNotFound, "Workout-item not found", nil)
+		return
+	}
 }
 
 // @Summary Delete exercise
