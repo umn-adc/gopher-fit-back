@@ -3,6 +3,7 @@ package nutrition
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"gopherfit/internal/api"
 	"gopherfit/internal/middleware"
 )
@@ -116,8 +117,46 @@ func (h *Handler) addMealItem(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Meal
 // @Router /nutrition/meals/{id} [get]
 func (h *Handler) getMeal(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	meal_id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid meal ID", err)
+		return
+	}
+
+	var meal Meal
+
+	err = h.DB.QueryRow(`SELECT id, user_id, date, meal_type, time, total_calories FROM meals WHERE id = ? AND user_id = ?`, meal_id, userID).
+		Scan(&meal.ID, &meal.UserID, &meal.Date, &meal.MealType, &meal.Time, &meal.TotalCalories)
+	if err != nil {
+		api.WriteError(w, http.StatusNotFound, "Meal not found", err)
+		return
+	}
+
+	itemRows, err := h.DB.Query(`SELECT id, meal_id, name, calories, protein, carbs, fat FROM meal_items WHERE meal_id = ?`, meal_id)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch meal items", err)
+		return
+	}
+	defer itemRows.Close()
+
+	for itemRows.Next() {
+		var item MealItem
+		itemRows.Scan(&item.ID, &item.MealID, &item.Name, &item.Calories, &item.Protein, &item.Carbs, &item.Fat)
+		meal.Items = append(meal.Items, item)
+	}
+
+	api.WriteSuccess(w, http.StatusOK, meal)
 }
+
+
+
+
 
 // @Summary Update meal
 // @Tags nutrition
@@ -127,7 +166,38 @@ func (h *Handler) getMeal(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Meal
 // @Router /nutrition/meals/{id} [put]
 func (h *Handler) updateMeal(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	mealID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid meal ID", err)
+		return
+	}
+
+	var meal Meal
+	if err := json.NewDecoder(r.Body).Decode(&meal); err != nil {
+		api.WriteError(w, http.StatusBadRequest, "invalid JSON", err)
+		return
+	}
+
+	query := `UPDATE meals SET date = ?, meal_type = ?, time = ?, total_calories = ? WHERE id = ? AND user_id = ?`
+	res, err := h.DB.Exec(query, meal.Date, meal.MealType, meal.Time, meal.TotalCalories, mealID, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to update meal", err)
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		api.WriteError(w, http.StatusNotFound, "Meal not found", err)
+		return
+	}
+
+	api.WriteSuccess(w, http.StatusOK, map[string]string{"message": "Meal updated successfully"})
 }
 
 // @Summary Delete meal
