@@ -1,7 +1,12 @@
 package workouts
 
 import (
+	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"gopherfit/internal/api"
+	"gopherfit/internal/middleware"
 )
 
 // @Summary Get user workouts
@@ -10,7 +15,32 @@ import (
 // @Success 200 {array} Workout
 // @Router /workouts/ [get]
 func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	// Extract the user ID from the request context (injected by JWT middleware)
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	rows, err := h.DB.Query(`SELECT id, user_id, workout_name, duration FROM workouts WHERE user_id = ?`, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error fetching workouts", err)
+		return
+	}
+	defer rows.Close()
+
+	var workouts []Workout
+	for rows.Next() {
+		var workout Workout
+		rows.Scan(&workout.ID, &workout.UserID, &workout.WorkoutName, &workout.Duration)
+		workouts = append(workouts, workout)
+	}
+
+	if workouts == nil {
+		workouts = []Workout{}
+	}
+
+	api.WriteSuccess(w, http.StatusOK, workouts)
 }
 
 // @Summary Create a workout
@@ -20,38 +50,53 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {object} Workout
 // @Router /workouts/ [post]
 func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
 	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
 	if !ok {
 		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
-	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
-		api.WriteError(w, http.StatusBadRequest, "invalid JSON", err)
-		return
-	}
+
 	var workout Workout
-	query :=`
-		INSERT INTO workouts (UserID, WorkoutName, Duration,)
-		VALUES (?, ?, ?);
-	`
-		_, err := h.DB.Exec(query,
-		UserID,
-		workout.WorkoutName,
-		workout.Duration,
-	)
-	if err != nil {
-		api.WriteError(w, http.StatusInternalServerError, "failed to create workout", err)
+	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
 		return
 	}
 
-	workoutNames, err := h.getWorkoutsNames(userID)
-	if err != nil {
-		api.WriteError(w, http.StatusInternalServerError, "failed to fetch workouts", err)
+	if userID != workout.UserID {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
-	api.WriteSuccess(w, http.StatusCreated, workoutNames)
+	// Begin transaction
+	tx, err := h.DB.Begin()
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error beginning transaction", err)
+		tx.Rollback()
+		return
+	}
+	_, err = tx.Exec(`
+		INSERT INTO workouts (id, user_id, workout_name, duration) VALUES (?, ?, ?, ?)
+	`, workout.ID, workout.UserID, workout.WorkoutName, workout.Duration)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error creating workout", err)
+		tx.Rollback()
+		return
+	}
+
+	for _, item := range workout.Items {
+		_, err := tx.Exec(`
+		INSERT into workout_item (id, workout_id, exercise_name, sets, reps, weight, duration_minutes) VALUES (?, ?, ?, ?, ?, ?, ?)
+		`, item.ID, item.WorkoutID, item.ExerciseName, item.Sets, item.Reps, item.Weight, item.DurationMinutes)
+		if err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Error creating workout item", err)
+			tx.Rollback()
+			return
+		}
+	}
+	// End transaction
+	tx.Commit()
+
+	api.WriteSuccess(w, http.StatusCreated, "Success Creating Workout")
 }
 
 
@@ -63,7 +108,40 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Workout
 // @Router /workouts/{id} [get]
 func (h *Handler) getWorkout(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid workout ID", err)
+		return
+	}
+
+	var workout Workout
+	err = h.DB.QueryRow(`SELECT id, user_id, workout_name, duration FROM workouts WHERE id = ? AND user_id = ?`, id, userID).
+		Scan(&workout.ID, &workout.UserID, &workout.WorkoutName, &workout.Duration)
+	if err != nil {
+		api.WriteError(w, http.StatusNotFound, "Workout not found", err)
+		return
+	}
+
+	rows, err := h.DB.Query(`SELECT id, workout_id, exercise_name, sets, reps, weight, duration_minutes FROM workout_item WHERE workout_id = ?`, id)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error fetching workout items", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item WorkoutItem
+		rows.Scan(&item.ID, &item.WorkoutID, &item.ExerciseName, &item.Sets, &item.Reps, &item.Weight, &item.DurationMinutes)
+		workout.Items = append(workout.Items, item)
+	}
+
+	api.WriteSuccess(w, http.StatusOK, workout)
 }
 
 // @Summary Update workout
@@ -74,7 +152,40 @@ func (h *Handler) getWorkout(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Workout
 // @Router /workouts/{id} [put]
 func (h *Handler) updateWorkout(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid workout ID", err)
+		return
+	}
+
+	var workout Workout
+	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+		return
+	}
+
+	result, err := h.DB.Exec(`UPDATE workouts SET workout_name = ?, duration = ? WHERE id = ? AND user_id = ?`,
+		workout.WorkoutName, workout.Duration, id, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error updating workout", err)
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		api.WriteError(w, http.StatusNotFound, "Workout not found", nil)
+		return
+	}
+
+	workout.ID = id
+	workout.UserID = userID
+	api.WriteSuccess(w, http.StatusOK, workout)
 }
 
 // @Summary Delete workout
@@ -84,5 +195,29 @@ func (h *Handler) updateWorkout(w http.ResponseWriter, r *http.Request) {
 // @Success 204 "No Content"
 // @Router /workouts/{id} [delete]
 func (h *Handler) deleteWorkout(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid workout ID", err)
+		return
+	}
+
+	result, err := h.DB.Exec(`DELETE FROM workouts WHERE id = ? AND user_id = ?`, id, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error deleting workout", err)
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		api.WriteError(w, http.StatusNotFound, "Workout not found", nil)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -3,7 +3,6 @@ package nutrition
 import (
 	"encoding/json"
 	"net/http"
-
 	"gopherfit/internal/api"
 	"gopherfit/internal/middleware"
 )
@@ -139,4 +138,35 @@ func (h *Handler) updateMeal(w http.ResponseWriter, r *http.Request) {
 // @Router /nutrition/meals/{id} [delete]
 func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 	// TODO: Implement
+	// delete meal and meal items (under meal class)
+
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	mealID := r.PathValue("id")
+	if mealID == "" {
+		api.WriteError(w, http.StatusBadRequest, "invalid id", nil)
+		return
+	}
+
+	query := `DELETE FROM meals WHERE meal_id = ? AND user_id = ?`
+
+	res, err := h.DB.Exec(query, mealID, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to delete meal", err)
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		api.WriteError(w, http.StatusNotFound, "meal not found", err)
+		return
+
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
 }
