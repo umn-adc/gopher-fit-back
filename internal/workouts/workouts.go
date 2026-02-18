@@ -99,6 +99,8 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusCreated, "Success Creating Workout")
 }
 
+
+
 // @Summary Get workout by ID
 // @Tags workouts
 // @Security BearerAuth
