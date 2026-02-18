@@ -80,8 +80,8 @@ func (h *Handler) updateWorkoutItem(w http.ResponseWriter, r *http.Request) {
 			reps = ?,
 			weight = ?,
 			duration_minutes = ?
-		WHERE id = ? AND workout_id = ?`,
-		item.ExerciseName, item.Sets, item.Reps, item.Weight, item.DurationMinutes, id, item.WorkoutID)
+		WHERE id = ? AND workout_id IN (SELECT id FROM workouts WHERE user_id = ?)`,
+		item.ExerciseName, item.Sets, item.Reps, item.Weight, item.DurationMinutes, id, userID)
 
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Error updating workout", err)
