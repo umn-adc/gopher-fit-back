@@ -1,9 +1,9 @@
 package nutrition
 
 import (
-	"gopherfit/internal/api"
-	"gopherfit/internal/middleware"
 	"net/http"
+
+	"gopherfit/internal/api"
 )
 
 // @Summary Update meal item
@@ -26,40 +26,32 @@ func (h *Handler) updateMealItem(w http.ResponseWriter, r *http.Request) {
 // @Success 204 "No Content"
 // @Router /nutrition/meals/{id}/items/{itemId} [delete]
 func (h *Handler) deleteMealItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
-	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	userID, ok := api.GetUserID(w, r)
 	if !ok {
-		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
-	mealID := r.PathValue("id")
-	if mealID == "" {
-		api.WriteError(w, http.StatusBadRequest, "invalid id", nil)
+	mealID, ok := api.PathInt(w, r, "id")
+	if !ok {
 		return
 	}
 
-	itemID := r.PathValue("itemId")
-	if itemID == "" {
-		api.WriteError(w, http.StatusBadRequest, "invalid id", nil)
+	itemID, ok := api.PathInt(w, r, "itemId")
+	if !ok {
 		return
 	}
 
-	query := `DELETE FROM meal_items where id = ? AND meal_id in (SELECT id FROM meals WHERE id = ? AND user_id = ?)`
-
-	res, err := h.DB.Exec(query, itemID, mealID, userID)
+	res, err := h.DB.Exec(`
+		DELETE FROM meal_items WHERE id = ? AND meal_id IN (SELECT id FROM meals WHERE id = ? AND user_id = ?)`,
+		itemID, mealID, userID)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "failed to delete meal item", err)
 		return
 	}
 
-	rowsAffected, err := res.RowsAffected()
-	if err != nil || rowsAffected == 0 {
-		api.WriteError(w, http.StatusNotFound, "meal item not found", err)
+	if !api.CheckAffected(w, res, "Meal item not found") {
 		return
-
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-
 }
