@@ -41,8 +41,6 @@ func InitDB() *sql.DB {
 		date TEXT NOT NULL,
 		meal_type TEXT NOT NULL,
 		time TEXT,
-		total_calories INTEGER DEFAULT 0,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 
