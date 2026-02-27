@@ -84,12 +84,15 @@ func InitDB() *sql.DB {
 	);
 
 	CREATE TABLE IF NOT EXISTS friendships (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		requester_id INTEGER NOT NULL,
-		receiver_id	INTEGER NOT NULL,
-		status ENUM('pending', 'accepted', 'rejected');
-		FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE
-		FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+		user1_id INTEGER NOT NULL,
+		user2_id INTEGER NOT NULL,
+		action_user_id INTEGER NOT NULL,
+		status TEXT CHECK (gender IN ('pending', 'accepted', 'blocked')),
+		PRIMARY KEY (user1_id, user2_id),
+		CHECK (user1_id < user2_id),
+		FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (action_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 	`)
 
