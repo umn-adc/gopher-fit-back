@@ -192,6 +192,13 @@ func (h *Handler) getFriendship(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+OK Cases:
+- outgoing pending
+- outgoing block
+Security Cases:
+- outgoing accepted
+*/
 func (h *Handler) addFriendship(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
@@ -274,6 +281,48 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 	user1 := min(userID, user2ID)
 	user2 := max(userID, user2ID)
 
+	var og Friendship
+	err := h.DB.QueryRow(`
+		SELECT user1_id, user2_id, action_user_id, status
+		FROM friendships
+		WHERE user1_id = ? AND user2_id = ?`,
+		user1, user2).Scan(
+		&og.User1ID, &og.User2ID, &og.ActionUserID, &og.Status)
+
+	//Security Cases
+	// Changing users
+	new_user1 := min(friendship.User1ID, friendship.User2ID)
+	new_user2 := max(friendship.User1ID, friendship.User2ID)
+	if user1 != new_user1 || user2 != new_user2 {
+		api.WriteError(w, http.StatusBadRequest, "Cannot change friend ids", nil)
+		return
+	}
+
+	//Not changing status
+	if friendship.Status == og.Status {
+		api.WriteError(w, http.StatusBadRequest, "Status must be changed on update", nil)
+		return
+	}
+
+	//Can't change incoming block
+	if og.Status == "blocked" && og.ActionUserID != userID {
+		api.WriteError(w, http.StatusBadRequest, "Cannot change users incoming block", nil)
+		return
+	}
+
+	// Only incoming pending can become accepted
+	if friendship.Status == "accepted" {
+		if og.Status == "pending" {
+			if og.ActionUserID != userID {
+				api.WriteError(w, http.StatusBadRequest, "Cannot accept an outgoing pending request", nil)
+				return
+			}
+		} else {
+			api.WriteError(w, http.StatusBadRequest, "Cannot accept a non-pending request", nil)
+			return
+		}
+	}
+
 	res, err := h.DB.Exec(`
 		UPDATE friendships
 		SET
@@ -284,7 +333,7 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 		WHERE
 			user1_id = ?
 			AND user2_id = ?`,
-		friendship.User1ID, friendship.User2ID, friendship.ActionUserID, friendship.Status, user1, user2)
+		user1, user2, userID, friendship.Status, user1, user2)
 
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "failed to update friendship", err)
@@ -299,6 +348,7 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
+Much more straightforward. Just can't delete an incoming block
 OK Cases:
 - Deleting incoming accepted
 - Deleting outgoing accepted
@@ -308,4 +358,52 @@ OK Cases:
 Security Cases:
 - Deleting incoming block
 */
-func (h *Handler) deleteFriendship(w http.ResponseWriter, r *http.Request) {}
+func (h *Handler) deleteFriendship(w http.ResponseWriter, r *http.Request) {
+	userID, ok := api.GetUserID(w, r)
+	if !ok {
+		return
+	}
+
+	user2ID, ok := api.PathInt(w, r, "user2_id")
+	if !ok {
+		return
+	}
+
+	user1 := min(userID, user2ID)
+	user2 := max(userID, user2ID)
+
+	var og Friendship
+	err := h.DB.QueryRow(`
+		SELECT user1_id, user2_id, action_user_id, status
+		FROM friendships
+		WHERE user1_id = ? AND user2_id = ?`,
+		user1, user2).Scan(
+		&og.User1ID, &og.User2ID, &og.ActionUserID, &og.Status)
+
+	if err != nil {
+		api.WriteError(w, http.StatusNotFound, "Friendship not found", err)
+		return
+	}
+
+	//Check security case
+	if og.Status == "blocked" && og.ActionUserID != userID {
+		api.WriteError(w, http.StatusBadRequest, "Cannot delete another user's block", nil)
+		return
+	}
+
+	res, err := h.DB.Exec(`
+	DELETE FROM friendships
+	WHERE user1_id = ? AND user2_id = ?`,
+		user1, user2)
+
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to delete friendship", err)
+		return
+	}
+
+	if !api.CheckAffected(w, res, "Friendship not found") {
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
