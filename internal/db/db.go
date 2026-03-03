@@ -87,12 +87,12 @@ func InitDB() *sql.DB {
 		user1_id INTEGER NOT NULL,
 		user2_id INTEGER NOT NULL,
 		action_user_id INTEGER NOT NULL,
-		status TEXT CHECK (gender IN ('pending', 'accepted', 'blocked')),
+		status TEXT CHECK (status IN ('pending', 'accepted', 'blocked')),
 		PRIMARY KEY (user1_id, user2_id),
 		CHECK (user1_id < user2_id),
 		FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
 		FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
-		FOREIGN KEY (action_id) REFERENCES users(id) ON DELETE CASCADE
+		FOREIGN KEY (action_user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 	`)
 
