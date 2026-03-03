@@ -5,12 +5,46 @@ import (
 	"net/http"
 )
 
-// @Summary Get users accepted friends
+// @Summary Get users relationships
 // @Tags social
 // @Security BearerAuth
 // @Success 200 {array} Friendship
 // @Router /social/friendships [get]
-func (h *Handler) getFriends(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getFriendships(w http.ResponseWriter, r *http.Request) {
+	userID, ok := api.GetUserID(w, r)
+	if !ok {
+		return
+	}
+
+	rows, err := h.DB.Query(
+		`SELECT user1_id, user2_id, action_user_id, status
+		FROM friendships
+		WHERE
+			user1_id = ? OR user2_id = ?`,
+		userID, userID)
+
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to fetch relationships", err)
+		return
+	}
+
+	friendships := []Friendship{}
+	for rows.Next() {
+		var f Friendship
+		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
+		friendships = append(friendships, f)
+	}
+	rows.Close()
+
+	api.WriteSuccess(w, http.StatusOK, friendships)
+}
+
+// @Summary Get users accepted friends
+// @Tags social
+// @Security BearerAuth
+// @Success 200 {array} Friendship
+// @Router /social/friendships/accepted [get]
+func (h *Handler) getAccepted(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
 		return
@@ -40,6 +74,11 @@ func (h *Handler) getFriends(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
 
+// @Summary Get users outgoing friend requests
+// @Tags social
+// @Security BearerAuth
+// @Success 200 {array} Friendship
+// @Router /social/friendships/outpending [get]
 func (h *Handler) getOutgoingRequests(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
@@ -50,7 +89,7 @@ func (h *Handler) getOutgoingRequests(w http.ResponseWriter, r *http.Request) {
 		`SELECT user1_id, user2_id, action_user_id, status
 		FROM friendships
 		WHERE
-			action_id = ?
+			action_user_id = ?
 			AND status = 'pending'`,
 		userID)
 
@@ -70,6 +109,11 @@ func (h *Handler) getOutgoingRequests(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
 
+// @Summary Get users incoming friend requests
+// @Tags social
+// @Security BearerAuth
+// @Success 200 {array} Friendship
+// @Router /social/friendships/inpending [get]
 func (h *Handler) getIncomingRequests(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
@@ -101,6 +145,11 @@ func (h *Handler) getIncomingRequests(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
 
+// @Summary Get users outgoing blocks
+// @Tags social
+// @Security BearerAuth
+// @Success 200 {array} Friendship
+// @Router /social/friendships/outblocks [get]
 func (h *Handler) getOutgoingBlocks(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
@@ -111,7 +160,7 @@ func (h *Handler) getOutgoingBlocks(w http.ResponseWriter, r *http.Request) {
 		`SELECT user1_id, user2_id, action_user_id, status
 		FROM friendships
 		WHERE
-			action_id = ?
+			action_user_id = ?
 			AND status = 'blocked'`,
 		userID)
 
@@ -131,6 +180,11 @@ func (h *Handler) getOutgoingBlocks(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
 
+// @Summary Get users incoming blocks
+// @Tags social
+// @Security BearerAuth
+// @Success 200 {array} Friendship
+// @Router /social/friendships/inblocks [get]
 func (h *Handler) getIncomingBlocks(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
@@ -162,6 +216,12 @@ func (h *Handler) getIncomingBlocks(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
 
+// @Summary Get relationship by friend's id
+// @Tags social
+// @Security BearerAuth
+// @Param user2_id path int true "friend's id"
+// @Success 200 {array} Friendship
+// @Router /social/friendships/{user2_id} [get]
 func (h *Handler) getFriendship(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
@@ -190,16 +250,24 @@ func (h *Handler) getFriendship(w http.ResponseWriter, r *http.Request) {
 		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch friendship", err)
 		return
 	}
+
+	api.WriteSuccess(w, http.StatusOK, friendship)
 }
 
-/*
-OK Cases:
-- outgoing pending
-- outgoing block
-Security Cases:
-- outgoing accepted
-*/
+// @Summary Create a relationship
+// @Tags social
+// @Security BearerAuth
+// @Param request body Friendship true "Friendship data"
+// @Success 201 {object} Friendship
+// @Router /social/friendships [post]
 func (h *Handler) addFriendship(w http.ResponseWriter, r *http.Request) {
+	/*
+		OK Cases:
+		- outgoing pending
+		- outgoing block
+		Security Cases:
+		- outgoing accepted
+	*/
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
 		return
@@ -221,7 +289,7 @@ func (h *Handler) addFriendship(w http.ResponseWriter, r *http.Request) {
 
 	// Don't allow a friendship to start as accepted
 	if friendship.Status == "accepted" {
-		api.WriteError(w, http.StatusBadRequest, "Request cannot be instansiated to 'accepted'", nil)
+		api.WriteError(w, http.StatusBadRequest, "Friendship cannot start as 'accepted'", nil)
 		return
 	}
 
@@ -241,28 +309,35 @@ func (h *Handler) addFriendship(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccess(w, http.StatusCreated, friendship)
 }
 
-// So incredibly insecure
-/*
-OK Cases:
-- Incoming accepted to block
-- Outgoing accepted to block
-- Incoming pending to block
-- Outgoing pending to block
-- Incoming pending to accepted
-Unsure Cases:
-- Incoming accepted to pending
-- Outgoing accepted to pending
-- Outgoing block to pending
-Security Cases:
-- Outgoing pending to accepted
-- Incoming block to pending
-- Incoming block to accepted
-- Incoming block to block
-- Outgoing block to accepted
-- Changing anything to itself (e.g. Incoming/Outgoing pending to pending)
-- Changing any userIDs (Only status should be allowed to change)
-*/
+// @Summary Update Friendship
+// @Tags social
+// @Security BearerAuth
+// @Param user2_id path int true "Friend ID"
+// @Param request body Friendship true "Friendship data"
+// @Success 200 {object} Friendship
+// @Router /social/friendships/{user2_id} [put]
 func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
+	/*
+		OK Cases:
+		- Incoming accepted to block
+		- Outgoing accepted to block
+		- Incoming pending to block
+		- Outgoing pending to block
+		- Incoming pending to accepted
+		Unsure Cases (Feel weird but do not cause security issues):
+		- Incoming accepted to pending
+		- Outgoing accepted to pending
+		- Outgoing block to pending
+		Security Cases:
+		- Outgoing pending to accepted
+		- Incoming block to pending
+		- Incoming block to accepted
+		- Incoming block to block
+		- Outgoing block to accepted
+		- Changing anything to itself (e.g. Incoming/Outgoing pending to pending)
+		- Changing any userIDs (Only status should be allowed to change)
+	*/
+
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
 		return
@@ -313,7 +388,7 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 	// Only incoming pending can become accepted
 	if friendship.Status == "accepted" {
 		if og.Status == "pending" {
-			if og.ActionUserID != userID {
+			if og.ActionUserID == userID {
 				api.WriteError(w, http.StatusBadRequest, "Cannot accept an outgoing pending request", nil)
 				return
 			}
@@ -344,21 +419,30 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	friendship.ActionUserID = userID
+	friendship.User1ID = user1
+	friendship.User2ID = user2
+	api.WriteSuccess(w, http.StatusOK, friendship)
 }
 
-/*
-Much more straightforward. Just can't delete an incoming block
-OK Cases:
-- Deleting incoming accepted
-- Deleting outgoing accepted
-- Deleting incoming pending
-- Deleting outgoing pending
-- Deleting outgoing block
-Security Cases:
-- Deleting incoming block
-*/
+// @Summary Delete friendship
+// @Tags social
+// @Security BearerAuth
+// @Param user2_id path int true "Friend ID"
+// @Success 204 "No Content"
+// @Router /social/friendships/{user2_id} [delete]
 func (h *Handler) deleteFriendship(w http.ResponseWriter, r *http.Request) {
+	/*
+		Much more straightforward. Just can't delete an incoming block
+		OK Cases:
+		- Deleting incoming accepted
+		- Deleting outgoing accepted
+		- Deleting incoming pending
+		- Deleting outgoing pending
+		- Deleting outgoing block
+		Security Cases:
+		- Deleting incoming block
+	*/
 	userID, ok := api.GetUserID(w, r)
 	if !ok {
 		return

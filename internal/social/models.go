@@ -10,7 +10,7 @@ type LeaderboardEntry struct {
 
 type Friendship struct {
 	User1ID      int    `json:"user1_id" example:"1"`
-	User2ID      int    `json:"user2_id" example:"1"`
+	User2ID      int    `json:"user2_id" example:"2"`
 	ActionUserID int    `json:"action_user_id" example:"1"`
 	Status       string `json:"status" example:"pending"`
 }
