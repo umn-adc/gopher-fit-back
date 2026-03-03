@@ -236,9 +236,24 @@ func (h *Handler) addFriendship(w http.ResponseWriter, r *http.Request) {
 
 // So incredibly insecure
 /*
+OK Cases:
+- Incoming accepted to block
+- Outgoing accepted to block
+- Incoming pending to block
+- Outgoing pending to block
+- Incoming pending to accepted
+Unsure Cases:
+- Incoming accepted to pending
+- Outgoing accepted to pending
+- Outgoing block to pending
 Security Cases:
-- User is trying to change their own pending request to accepted
-- User is trying to change anything in another user's block
+- Outgoing pending to accepted
+- Incoming block to pending
+- Incoming block to accepted
+- Incoming block to block
+- Outgoing block to accepted
+- Changing anything to itself (e.g. Incoming/Outgoing pending to pending)
+- Changing any userIDs (Only status should be allowed to change)
 */
 func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
@@ -283,4 +298,14 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+/*
+OK Cases:
+- Deleting incoming accepted
+- Deleting outgoing accepted
+- Deleting incoming pending
+- Deleting outgoing pending
+- Deleting outgoing block
+Security Cases:
+- Deleting incoming block
+*/
 func (h *Handler) deleteFriendship(w http.ResponseWriter, r *http.Request) {}
