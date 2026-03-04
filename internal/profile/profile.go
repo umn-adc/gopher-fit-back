@@ -89,3 +89,23 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	profile.UserID = userID
 	api.WriteSuccess(w, http.StatusOK, profile)
 }
+
+// @Summary Update username/password
+// @Tags profile
+// @Security BearerAuth
+// @Param request body Profile true "Profile data"
+// @Success 200 {object} Profile
+// @Router /profile/username [put]
+func (h *Handler) handleUpdateUsername(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// @Summary Update password
+// @Tags profile
+// @Security BearerAuth
+// @Param request body Profile true "Profile data"
+// @Success 200 {object} Profile
+// @Router /profile/password [put]
+func (h *Handler) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
+
+}

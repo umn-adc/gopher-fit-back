@@ -18,6 +18,8 @@ func (h *Handler) RegisterRoutes() *http.ServeMux {
 
 	r.HandleFunc("GET /profile/", h.handleGetProfile)
 	r.HandleFunc("PUT /profile/", h.handleUpdateProfile)
+	r.HandleFunc("PUT /profile/username", h.handleUpdateUsername)
+	r.HandleFunc("PUT /profile/password", h.handleUpdatePassword)
 
 	return r
 }
