@@ -192,6 +192,21 @@ definitions:
         example: 75
         type: integer
     type: object
+  social.Friendship:
+    properties:
+      action_user_id:
+        example: 1
+        type: integer
+      status:
+        example: pending
+        type: string
+      user1_id:
+        example: 1
+        type: integer
+      user2_id:
+        example: 2
+        type: integer
+    type: object
   social.LeaderboardEntry:
     properties:
       rank:
@@ -512,6 +527,166 @@ paths:
       summary: Update user profile
       tags:
       - profile
+  /social/friendships:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users relationships
+      tags:
+      - social
+    post:
+      parameters:
+      - description: Friendship data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/social.Friendship'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/social.Friendship'
+      security:
+      - BearerAuth: []
+      summary: Create a relationship
+      tags:
+      - social
+  /social/friendships/{user2_id}:
+    delete:
+      parameters:
+      - description: Friend ID
+        in: path
+        name: user2_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete friendship
+      tags:
+      - social
+    get:
+      parameters:
+      - description: friend's id
+        in: path
+        name: user2_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get relationship by friend's id
+      tags:
+      - social
+    put:
+      parameters:
+      - description: Friend ID
+        in: path
+        name: user2_id
+        required: true
+        type: integer
+      - description: Friendship data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/social.Friendship'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/social.Friendship'
+      security:
+      - BearerAuth: []
+      summary: Update Friendship
+      tags:
+      - social
+  /social/friendships/accepted:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users accepted friends
+      tags:
+      - social
+  /social/friendships/inblocks:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users incoming blocks
+      tags:
+      - social
+  /social/friendships/inpending:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users incoming friend requests
+      tags:
+      - social
+  /social/friendships/outblocks:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users outgoing blocks
+      tags:
+      - social
+  /social/friendships/outpending:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.Friendship'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get users outgoing friend requests
+      tags:
+      - social
   /social/leaderboard:
     get:
       responses:

@@ -428,6 +428,275 @@
                 }
             }
         },
+        "/social/friendships": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get users relationships",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Create a relationship",
+                "parameters": [
+                    {
+                        "description": "Friendship data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/social.Friendship"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/social.Friendship"
+                        }
+                    }
+                }
+            }
+        },
+        "/social/friendships/accepted": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get users accepted friends",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/social/friendships/inblocks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get users incoming blocks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/social/friendships/inpending": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get users incoming friend requests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/social/friendships/outblocks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get users outgoing blocks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/social/friendships/outpending": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get users outgoing friend requests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/social/friendships/{user2_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get relationship by friend's id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "friend's id",
+                        "name": "user2_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.Friendship"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Update Friendship",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Friend ID",
+                        "name": "user2_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Friendship data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/social.Friendship"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/social.Friendship"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Delete friendship",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Friend ID",
+                        "name": "user2_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/social/leaderboard": {
             "get": {
                 "tags": [
@@ -972,6 +1241,27 @@
                 "weight": {
                     "type": "integer",
                     "example": 75
+                }
+            }
+        },
+        "social.Friendship": {
+            "type": "object",
+            "properties": {
+                "action_user_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "user1_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "user2_id": {
+                    "type": "integer",
+                    "example": 2
                 }
             }
         },
