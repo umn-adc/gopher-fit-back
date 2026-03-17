@@ -15,7 +15,50 @@ import (
 // @Success 200 {object} MealItem
 // @Router /nutrition/meals/{id}/items/{itemId} [put]
 func (h *Handler) updateMealItem(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
+	userID, ok := api.GetUserID(w, r)
+	if !ok {
+		return
+	}
+
+	mealID, ok := api.PathInt(w, r, "id")
+	if !ok {
+		return
+	}
+
+	itemID, ok := api.PathInt(w, r, "itemId")
+	if !ok {
+		return
+	}
+
+	var req MealItem
+	if !api.DecodeJSON(w, r, &req) {
+		return
+	}
+
+	res, err := h.DB.Exec(`
+		UPDATE meal_items 
+
+		SET name = ?,
+		    calories = ?,
+		    protein = ?,
+		    carbs = ?,
+		    fat = ?
+		WHERE id = ? 
+		AND meal_id = ?
+				`,
+		req.Name, req.Calories, req.Protein, req.Carbs, req.Fat,
+		itemID, mealID, userID)
+
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to update meal item", err)
+		return
+	}
+
+	if !api.CheckAffected(w, res, "Meal item not found") {
+		return
+	}
+
+	api.WriteSuccess(w, http.StatusOK, req)
 }
 
 // @Summary Delete meal item
