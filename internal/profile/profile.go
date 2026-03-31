@@ -26,9 +26,8 @@ type UpdatePassReq struct {
 // @Success 200 {object} Profile
 // @Router /profile/ [get]
 func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	userID, ok := api.GetUserID(w, r)
 	if !ok {
-		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -71,15 +70,13 @@ func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Profile
 // @Router /profile/ [put]
 func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	userID, ok := api.GetUserID(w, r)
 	if !ok {
-		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
 	var profile Profile
-	if err := json.NewDecoder(r.Body).Decode(&profile); err != nil {
-		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+	if !api.DecodeJSON(w, r, &profile) {
 		return
 	}
 
@@ -91,7 +88,6 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		SET name = ?, age = ?, height = ?, weight = ?, gender = ?, activity_level = ?, goals = ?, sports = ?
 		WHERE user_id = ?
 	`, profile.Name, profile.Age, profile.Height, profile.Weight, profile.Gender, profile.ActivityLevel, string(goalsJSON), string(sportsJSON), userID)
-
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Failed to update profile", err)
 		return
