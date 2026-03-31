@@ -70,14 +70,14 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func validUsername(username string) bool {
+func ValidUsername(username string) bool {
 	if username == "" {
 		return false
 	}
 	return true
 }
 
-func validPasswd(passwd string) bool {
+func ValidPasswd(passwd string) bool {
 	if passwd == "" {
 		return false
 	}
