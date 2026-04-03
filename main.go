@@ -41,11 +41,14 @@ func main() {
 	nutritionHandler := nutrition.NewHandler(conn)
 	workoutsHandler := workouts.NewHandler(conn)
 	socialHandler := social.NewHandler(conn)
+	manager := NewManager()
 
 	baseMux.Handle("/profile/", middleware.JWTMiddleware(profileHandler.RegisterRoutes()))
 	baseMux.Handle("/nutrition/", middleware.JWTMiddleware(nutritionHandler.RegisterRoutes()))
 	baseMux.Handle("/workouts/", middleware.JWTMiddleware(workoutsHandler.RegisterRoutes()))
 	baseMux.Handle("/social/", middleware.JWTMiddleware(socialHandler.RegisterRoutes()))
+
+	baseMux.HandleFunc("/ws", manager.serveWS)
 
 	// Swagger UI
 	baseMux.Handle("/swagger/", httpSwagger.Handler(

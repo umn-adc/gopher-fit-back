@@ -94,6 +94,24 @@ func InitDB() *sql.DB {
 		FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
 		FOREIGN KEY (action_user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
+
+	CREATE TABLE IF NOT EXISTS chats (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		chat_name TEXT
+	);
+
+	CREATE TABLE IF NOT EXISTS chat_member (
+		user_id INTEGER NOT NULL,
+		chat_id INTEGER NOT NULL,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+	);
+
+	CREATE TABLE IF NOT EXISTS messages (
+		chat_id INTEGER NOT NULL,
+		body TEXT,
+		FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,	
+	);
 	`)
 
 	if err != nil {
