@@ -5,22 +5,19 @@ import (
 )
 
 type Client struct {
-	connection *websocket.Conn
-	hub        *Hub
-
-	//egress is used to avoid concurrent writes on the connection
-	egress chan []byte
+	ID   int
+	Conn *websocket.Conn
+	Send chan []byte
 }
 
 func NewClient(conn *websocket.Conn, hub *Hub) *Client {
 	return &Client{
-		connection: conn,
-		hub:        hub,
-		egress:     make(chan []byte),
+		Conn: conn,
+		Send: make(chan []byte),
 	}
 }
 
-func (c *Client) readMessages() {
+func (c *Client) readPump() {
 	defer func() {
 		//cleanup connection
 		c.hub.removeClient(c)

@@ -5,6 +5,7 @@ import (
 
 	"gopherfit/internal/auth"
 	"gopherfit/internal/db"
+	"gopherfit/internal/messaging"
 	"gopherfit/internal/middleware"
 	"gopherfit/internal/nutrition"
 	"gopherfit/internal/profile"
@@ -36,12 +37,16 @@ func main() {
 	authHandler := auth.NewHandler(conn)
 	baseMux.Handle("/auth/", authHandler.RegisterRoutes())
 
+	// Websocket hub
+	messaging_hub := messaging.NewHub()
+	go messaging_hub.run()
+
 	// Protected handlers (with JWT middleware)
 	profileHandler := profile.NewHandler(conn)
 	nutritionHandler := nutrition.NewHandler(conn)
 	workoutsHandler := workouts.NewHandler(conn)
 	socialHandler := social.NewHandler(conn)
-	manager := NewManager()
+	messagingHandler = messaging.NewHandler(conn)
 
 	baseMux.Handle("/profile/", middleware.JWTMiddleware(profileHandler.RegisterRoutes()))
 	baseMux.Handle("/nutrition/", middleware.JWTMiddleware(nutritionHandler.RegisterRoutes()))

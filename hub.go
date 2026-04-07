@@ -1,17 +1,9 @@
-package messaging
+package main
 
 import (
 	"gopherfit/internal/api"
 	"net/http"
-
-	"github.com/gorilla/websocket"
 )
-
-type Client struct {
-	ID   int
-	Conn *websocket.Conn
-	Send chan []byte
-}
 
 type Conversation struct {
 	ID    int
@@ -48,7 +40,18 @@ func (h *Hub) run() {
 				close(client.Send)
 			}
 		case msg := <-h.Broadcast:
-			// convo := h.Conversations[msg.ChatID]
+			convo, ok := h.Conversations[msg.ChatID]
+			if !ok {
+				//Couldn't find conversation
+			}
+
+			for userID := range convo.Users {
+				client, ok := h.Clients[userID]
+				if !ok {
+					//couldn't find client
+				}
+				client.Send <- []byte(msg.Body)
+			}
 		}
 
 	}
