@@ -31,6 +31,7 @@ func (h *Handler) RegisterRoutes() *http.ServeMux {
 	// Macro Goals
 	r.HandleFunc("GET /nutrition/macros", h.getMacroGoals)
 	r.HandleFunc("PUT /nutrition/macros", h.updateMacroGoals)
+	r.HandleFunc("POST /nutrition/macros", h.addMacro)
 
 	return r
 }

@@ -303,6 +303,24 @@ paths:
       summary: Get macro goals
       tags:
       - nutrition
+    post:
+      parameters:
+      - description: Macro goals
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/nutrition.MacroGoals'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/nutrition.MacroGoals'
+      security:
+      - BearerAuth: []
+      summary: Add macro goals
+      tags:
+      - nutrition
     put:
       parameters:
       - description: Macro goals
