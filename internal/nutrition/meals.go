@@ -2,10 +2,10 @@ package nutrition
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"gopherfit/internal/api"
 	"gopherfit/internal/middleware"
+	"net/http"
+	"strconv"
 )
 
 // @Summary Get user meals
@@ -139,4 +139,62 @@ func (h *Handler) updateMeal(w http.ResponseWriter, r *http.Request) {
 // @Router /nutrition/meals/{id} [delete]
 func (h *Handler) deleteMeal(w http.ResponseWriter, r *http.Request) {
 	// TODO: Implement
+}
+
+func getMealHelper(h *Handler, id int, userID int) (Meal, error) {
+	var meal Meal
+	err := h.DB.QueryRow(`SELECT id, user_id, date, meal_type, time, total_calories FROM meals WHERE id = ? AND user_id = ?`, id, userID).
+		Scan(&meal.ID, &meal.UserID, &meal.Date, &meal.MealType, &meal.Time, &meal.TotalCalories)
+
+	if err != nil {
+		return meal, err
+	}
+
+	rows, err := h.DB.Query(`SELECT id, meal_id, name, calories, protein, carbs, fat FROM meal_items WHERE meal_id = ?`, id)
+	if err != nil {
+		return meal, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item MealItem
+		err = rows.Scan(&item.ID, &item.MealID, &item.Name, &item.Calories, &item.Protein, &item.Carbs, &item.Fat)
+		if err != nil {
+			return meal, err
+		}
+		meal.Items = append(meal.Items, item)
+	}
+	return meal, nil
+}
+
+// @Summary Favorite a meal
+// @Tags nutrition
+// @Security BearerAuth
+// @Param id path int true "Meal ID"
+// @Success 204 "No Content"
+// @Router /nutrition/meals/favorite/{id} [delete]
+func (h *Handler) favoriteMeal(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	if !ok {
+		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid meal ID", err)
+		return
+	}
+
+	meal, err := getMealHelper(h, id, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error fetching workout", err)
+		return
+	}
+
+	err = addFavMealHelper(h, meal)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error writing meal item", err)
+		return
+	}
 }
