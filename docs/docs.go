@@ -312,6 +312,13 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Updates an item only within a meal owned by the caller. IDs come from the path; body IDs are ignored. Name must be nonblank and nutrition values must be nonnegative integers.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "nutrition"
                 ],
@@ -346,6 +353,30 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/nutrition.MealItem"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid IDs, JSON, name, or nutrition values",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Meal item missing or not owned by caller",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Database failure",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -434,6 +465,130 @@ const docTemplate = `{
                 }
             }
         },
+        "/profile/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Update password",
+                "parameters": [
+                    {
+                        "description": "Password update data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/profile.UpdatePassReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/username": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Update username",
+                "parameters": [
+                    {
+                        "description": "Username update data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/profile.UpdateUserReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns only user_id and username. Requires authentication. Private attributes remain available only through GET /profile/ for the caller.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Look up a user's public username",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Positive user ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/profile.PublicProfile"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Database failure",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/social/friendships": {
             "get": {
                 "security": [
@@ -454,6 +609,18 @@ const docTemplate = `{
                                 "$ref": "#/definitions/social.Friendship"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -462,6 +629,13 @@ const docTemplate = `{
                     {
                         "BearerAuth": []
                     }
+                ],
+                "description": "Both user IDs must exist and include the caller. Only pending or blocked may be created. action_user_id is always set to the caller; a supplied value is ignored.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
                 ],
                 "tags": [
                     "social"
@@ -483,6 +657,36 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/social.Friendship"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid IDs, status, or JSON",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Relationship already exists",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -508,6 +712,18 @@ const docTemplate = `{
                                 "$ref": "#/definitions/social.Friendship"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -531,6 +747,18 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/social.Friendship"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -556,6 +784,18 @@ const docTemplate = `{
                                 "$ref": "#/definitions/social.Friendship"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -580,6 +820,18 @@ const docTemplate = `{
                                 "$ref": "#/definitions/social.Friendship"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -603,6 +855,18 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/social.Friendship"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -632,10 +896,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/social.Friendship"
-                            }
+                            "$ref": "#/definitions/social.Friendship"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or self user ID",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -645,6 +930,13 @@ const docTemplate = `{
                     {
                         "BearerAuth": []
                     }
+                ],
+                "description": "Only the recipient may accept a pending request. Either participant may block unless already blocked by the other user. A block's owner may change it to pending; accepted relationships may return to pending. Same-status changes are rejected. IDs must match the existing pair; action_user_id is set to the caller.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
                 ],
                 "tags": [
                     "social"
@@ -674,6 +966,36 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/social.Friendship"
                         }
+                    },
+                    "400": {
+                        "description": "Invalid IDs, status, JSON, or forbidden transition",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Relationship not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Relationship changed concurrently; reload before retrying",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -683,6 +1005,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Either participant may delete pending or accepted relationships. Only the user who created a block may delete it. An incoming block cannot be removed by the blocked user.",
                 "tags": [
                     "social"
                 ],
@@ -699,16 +1022,65 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid ID or cannot delete another user's block",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Relationship not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Relationship changed concurrently; reload before retrying",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
         },
         "/social/leaderboard": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Ranks each participant's highest positive weight using descending dense rank. Percentile is 100 times participants at or below the weight divided by all participants of the exercise. Ties share rank and percentile. Names are matched ignoring case and collapsed whitespace. Unknown exercises return an empty array. This replaces the static score leaderboard.",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "social"
                 ],
-                "summary": "Get leaderboard",
+                "summary": "Get a per-exercise leaderboard",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "Bench Press",
+                        "description": "Exercise name",
+                        "name": "exercise",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -717,6 +1089,64 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/social.LeaderboardEntry"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Exercise is required",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/social/muscle-ranks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns only the caller's positive-weight records, ordered by normalized exercise name. Rank and percentile are calculated across all participants of each exercise before filtering to the caller. Percentile counts users at or below the record; ties share descending dense rank. Empty results are an array.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "social"
+                ],
+                "summary": "Get the caller's personal exercise records and ranks",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/social.MuscleRank"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -751,6 +1181,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Creates the workout and its exercise records atomically. Item names must be nonblank and weights finite and nonnegative; only positive weights enter rankings.",
                 "tags": [
                     "workouts"
                 ],
@@ -771,6 +1202,24 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/workouts.Workout"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -848,6 +1297,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Deletes the workout and its items and recalculates affected personal records in one transaction.",
                 "tags": [
                     "workouts"
                 ],
@@ -864,6 +1314,30 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -875,6 +1349,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Adds an owned workout item and updates its personal record atomically. Name must be nonblank and weight finite and nonnegative. Zero weights are logged but not ranked.",
                 "tags": [
                     "workouts"
                 ],
@@ -903,6 +1378,30 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/workouts.WorkoutItem"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -914,6 +1413,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Updates only an item in the caller's specified workout. Renames and weight changes recalculate old and new exercise records atomically. Name must be nonblank and weight finite and nonnegative.",
                 "tags": [
                     "workouts"
                 ],
@@ -944,10 +1444,31 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/workouts.WorkoutItem"
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
                         }
                     }
                 }
@@ -958,6 +1479,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Deletes an owned workout item and promotes the next-highest lift for the exercise, or removes its record if none remains, in the same transaction.",
                 "tags": [
                     "workouts"
                 ],
@@ -981,12 +1503,45 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "api.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Resource not found"
+                }
+            }
+        },
         "auth.AuthResponse": {
             "type": "object",
             "properties": {
@@ -1250,6 +1805,38 @@ const docTemplate = `{
                 }
             }
         },
+        "profile.PublicProfile": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "username": {
+                    "type": "string",
+                    "example": "gopher"
+                }
+            }
+        },
+        "profile.UpdatePassReq": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "profile.UpdateUserReq": {
+            "type": "object",
+            "properties": {
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "social.Friendship": {
             "type": "object",
             "properties": {
@@ -1259,6 +1846,11 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string",
+                    "enum": [
+                        "pending",
+                        "accepted",
+                        "blocked"
+                    ],
                     "example": "pending"
                 },
                 "user1_id": {
@@ -1274,13 +1866,17 @@ const docTemplate = `{
         "social.LeaderboardEntry": {
             "type": "object",
             "properties": {
+                "max_weight": {
+                    "type": "number",
+                    "example": 135.5
+                },
+                "percentile": {
+                    "type": "number",
+                    "example": 100
+                },
                 "rank": {
                     "type": "integer",
                     "example": 1
-                },
-                "score": {
-                    "type": "integer",
-                    "example": 250
                 },
                 "user_id": {
                     "type": "integer",
@@ -1288,7 +1884,40 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string",
-                    "example": "alice"
+                    "example": "gopher"
+                }
+            }
+        },
+        "social.MuscleRank": {
+            "type": "object",
+            "properties": {
+                "exercise_key": {
+                    "type": "string",
+                    "example": "bench press"
+                },
+                "exercise_name": {
+                    "type": "string",
+                    "example": "Bench Press"
+                },
+                "max_weight": {
+                    "type": "number",
+                    "example": 135.5
+                },
+                "percentile": {
+                    "type": "number",
+                    "example": 100
+                },
+                "rank": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "source_workout_item_id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },

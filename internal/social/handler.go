@@ -18,6 +18,7 @@ func (h *Handler) RegisterRoutes() *http.ServeMux {
 
 	//Leaderboard CRUD
 	r.HandleFunc("GET /social/leaderboard", h.getLeaderboard)
+	r.HandleFunc("GET /social/muscle-ranks", h.getMuscleRanks)
 
 	//Friend CRUD
 	r.HandleFunc("GET /social/friendships", h.getFriendships)

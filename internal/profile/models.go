@@ -1,5 +1,11 @@
 package profile
 
+// PublicProfile is the complete set of user fields visible to other users.
+type PublicProfile struct {
+	UserID   int    `json:"user_id" example:"1"`
+	Username string `json:"username" example:"gopher"`
+}
+
 type Profile struct {
 	UserID        int      `json:"user_id" example:"1"`
 	Name          string   `json:"name" example:"John Doe"`

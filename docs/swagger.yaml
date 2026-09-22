@@ -1,5 +1,11 @@
 basePath: /
 definitions:
+  api.ErrorResponse:
+    properties:
+      error:
+        example: Resource not found
+        type: string
+    type: object
   auth.AuthResponse:
     properties:
       UserID:
@@ -192,12 +198,37 @@ definitions:
         example: 75
         type: integer
     type: object
+  profile.PublicProfile:
+    properties:
+      user_id:
+        example: 1
+        type: integer
+      username:
+        example: gopher
+        type: string
+    type: object
+  profile.UpdatePassReq:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
+  profile.UpdateUserReq:
+    properties:
+      username:
+        type: string
+    type: object
   social.Friendship:
     properties:
       action_user_id:
         example: 1
         type: integer
       status:
+        enum:
+        - pending
+        - accepted
+        - blocked
         example: pending
         type: string
       user1_id:
@@ -209,18 +240,45 @@ definitions:
     type: object
   social.LeaderboardEntry:
     properties:
+      max_weight:
+        example: 135.5
+        type: number
+      percentile:
+        example: 100
+        type: number
       rank:
         example: 1
-        type: integer
-      score:
-        example: 250
         type: integer
       user_id:
         example: 1
         type: integer
       username:
-        example: alice
+        example: gopher
         type: string
+    type: object
+  social.MuscleRank:
+    properties:
+      exercise_key:
+        example: bench press
+        type: string
+      exercise_name:
+        example: Bench Press
+        type: string
+      max_weight:
+        example: 135.5
+        type: number
+      percentile:
+        example: 100
+        type: number
+      rank:
+        example: 1
+        type: integer
+      source_workout_item_id:
+        example: 12
+        type: integer
+      user_id:
+        example: 1
+        type: integer
     type: object
   workouts.Workout:
     properties:
@@ -470,6 +528,11 @@ paths:
       tags:
       - nutrition
     put:
+      consumes:
+      - application/json
+      description: Updates an item only within a meal owned by the caller. IDs come
+        from the path; body IDs are ignored. Name must be nonblank and nutrition values
+        must be nonnegative integers.
       parameters:
       - description: Meal ID
         in: path
@@ -487,11 +550,29 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/nutrition.MealItem'
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/nutrition.MealItem'
+        "400":
+          description: Invalid IDs, JSON, name, or nutrition values
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Meal item missing or not owned by caller
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Database failure
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update meal item
@@ -527,6 +608,84 @@ paths:
       summary: Update user profile
       tags:
       - profile
+  /profile/{id}:
+    get:
+      description: Returns only user_id and username. Requires authentication. Private
+        attributes remain available only through GET /profile/ for the caller.
+      parameters:
+      - description: Positive user ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/profile.PublicProfile'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Authentication required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Database failure
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Look up a user's public username
+      tags:
+      - profile
+  /profile/password:
+    put:
+      parameters:
+      - description: Password update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/profile.UpdatePassReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update password
+      tags:
+      - profile
+  /profile/username:
+    put:
+      parameters:
+      - description: Username update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/profile.UpdateUserReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update username
+      tags:
+      - profile
   /social/friendships:
     get:
       responses:
@@ -536,12 +695,25 @@ paths:
             items:
               $ref: '#/definitions/social.Friendship'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get users relationships
       tags:
       - social
     post:
+      consumes:
+      - application/json
+      description: Both user IDs must exist and include the caller. Only pending or
+        blocked may be created. action_user_id is always set to the caller; a supplied
+        value is ignored.
       parameters:
       - description: Friendship data
         in: body
@@ -549,11 +721,33 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/social.Friendship'
+      produces:
+      - application/json
       responses:
         "201":
           description: Created
           schema:
             $ref: '#/definitions/social.Friendship'
+        "400":
+          description: Invalid IDs, status, or JSON
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Relationship already exists
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a relationship
@@ -561,6 +755,9 @@ paths:
       - social
   /social/friendships/{user2_id}:
     delete:
+      description: Either participant may delete pending or accepted relationships.
+        Only the user who created a block may delete it. An incoming block cannot
+        be removed by the blocked user.
       parameters:
       - description: Friend ID
         in: path
@@ -570,6 +767,26 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Invalid ID or cannot delete another user's block
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Relationship not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Relationship changed concurrently; reload before retrying
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete friendship
@@ -586,15 +803,36 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/social.Friendship'
-            type: array
+            $ref: '#/definitions/social.Friendship'
+        "400":
+          description: Invalid or self user ID
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get relationship by friend's id
       tags:
       - social
     put:
+      consumes:
+      - application/json
+      description: Only the recipient may accept a pending request. Either participant
+        may block unless already blocked by the other user. A block's owner may change
+        it to pending; accepted relationships may return to pending. Same-status changes
+        are rejected. IDs must match the existing pair; action_user_id is set to the
+        caller.
       parameters:
       - description: Friend ID
         in: path
@@ -607,11 +845,33 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/social.Friendship'
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/social.Friendship'
+        "400":
+          description: Invalid IDs, status, JSON, or forbidden transition
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Relationship not found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "409":
+          description: Relationship changed concurrently; reload before retrying
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update Friendship
@@ -626,6 +886,14 @@ paths:
             items:
               $ref: '#/definitions/social.Friendship'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get users accepted friends
@@ -640,6 +908,14 @@ paths:
             items:
               $ref: '#/definitions/social.Friendship'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get users incoming blocks
@@ -654,6 +930,14 @@ paths:
             items:
               $ref: '#/definitions/social.Friendship'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get users incoming friend requests
@@ -668,6 +952,14 @@ paths:
             items:
               $ref: '#/definitions/social.Friendship'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get users outgoing blocks
@@ -682,6 +974,14 @@ paths:
             items:
               $ref: '#/definitions/social.Friendship'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get users outgoing friend requests
@@ -689,6 +989,20 @@ paths:
       - social
   /social/leaderboard:
     get:
+      description: Ranks each participant's highest positive weight using descending
+        dense rank. Percentile is 100 times participants at or below the weight divided
+        by all participants of the exercise. Ties share rank and percentile. Names
+        are matched ignoring case and collapsed whitespace. Unknown exercises return
+        an empty array. This replaces the static score leaderboard.
+      parameters:
+      - description: Exercise name
+        example: Bench Press
+        in: query
+        name: exercise
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -696,7 +1010,50 @@ paths:
             items:
               $ref: '#/definitions/social.LeaderboardEntry'
             type: array
-      summary: Get leaderboard
+        "400":
+          description: Exercise is required
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a per-exercise leaderboard
+      tags:
+      - social
+  /social/muscle-ranks:
+    get:
+      description: Returns only the caller's positive-weight records, ordered by normalized
+        exercise name. Rank and percentile are calculated across all participants
+        of each exercise before filtering to the caller. Percentile counts users at
+        or below the record; ties share descending dense rank. Empty results are an
+        array.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/social.MuscleRank'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the caller's personal exercise records and ranks
       tags:
       - social
   /workouts/:
@@ -714,6 +1071,9 @@ paths:
       tags:
       - workouts
     post:
+      description: Creates the workout and its exercise records atomically. Item names
+        must be nonblank and weights finite and nonnegative; only positive weights
+        enter rankings.
       parameters:
       - description: Workout data
         in: body
@@ -726,6 +1086,18 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/workouts.Workout'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a workout
@@ -733,6 +1105,8 @@ paths:
       - workouts
   /workouts/{id}:
     delete:
+      description: Deletes the workout and its items and recalculates affected personal
+        records in one transaction.
       parameters:
       - description: Workout ID
         in: path
@@ -742,6 +1116,22 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete workout
@@ -789,6 +1179,9 @@ paths:
       - workouts
   /workouts/{id}/items:
     post:
+      description: Adds an owned workout item and updates its personal record atomically.
+        Name must be nonblank and weight finite and nonnegative. Zero weights are
+        logged but not ranked.
       parameters:
       - description: Workout ID
         in: path
@@ -806,6 +1199,22 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/workouts.WorkoutItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Add exercise to workout
@@ -813,6 +1222,8 @@ paths:
       - workouts
   /workouts/{id}/items/{itemId}:
     delete:
+      description: Deletes an owned workout item and promotes the next-highest lift
+        for the exercise, or removes its record if none remains, in the same transaction.
       parameters:
       - description: Workout ID
         in: path
@@ -827,12 +1238,31 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete exercise
       tags:
       - workouts
     put:
+      description: Updates only an item in the caller's specified workout. Renames
+        and weight changes recalculate old and new exercise records atomically. Name
+        must be nonblank and weight finite and nonnegative.
       parameters:
       - description: Workout ID
         in: path
@@ -851,10 +1281,24 @@ paths:
         schema:
           $ref: '#/definitions/workouts.WorkoutItem'
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
           schema:
-            $ref: '#/definitions/workouts.WorkoutItem'
+            $ref: '#/definitions/api.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update exercise

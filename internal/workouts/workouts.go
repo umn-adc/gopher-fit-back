@@ -77,10 +77,14 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Create a workout
+// @Description Creates the workout and its exercise records atomically. Item names must be nonblank and weights finite and nonnegative; only positive weights enter rankings.
 // @Tags workouts
 // @Security BearerAuth
 // @Param request body Workout true "Workout data"
 // @Success 201 {object} Workout
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 401 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
 // @Router /workouts/ [post]
 func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
@@ -94,6 +98,13 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workout.UserID = userID
+	names := make([]string, 0, len(workout.Items))
+	for _, item := range workout.Items {
+		if !validRecordItem(w, item) {
+			return
+		}
+		names = append(names, item.ExerciseName)
+	}
 
 	tx, err := h.DB.BeginTx(r.Context(), nil)
 	if err != nil {
@@ -102,7 +113,7 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 	}
 	defer api.Rollback(tx)
 
-	result, err := tx.Exec(`
+	result, err := tx.ExecContext(r.Context(), `
 		INSERT INTO workouts (user_id, workout_name, duration) VALUES (?, ?, ?)
 	`, workout.UserID, workout.WorkoutName, workout.Duration)
 	if err != nil {
@@ -119,7 +130,7 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 
 	for i := range workout.Items {
 		workout.Items[i].WorkoutID = workout.ID
-		itemResult, err := tx.Exec(`
+		itemResult, err := tx.ExecContext(r.Context(), `
 		INSERT INTO workout_item (workout_id, exercise_name, sets, reps, weight, duration_minutes) VALUES (?, ?, ?, ?, ?, ?)
 		`, workout.ID, workout.Items[i].ExerciseName, workout.Items[i].Sets, workout.Items[i].Reps, workout.Items[i].Weight, workout.Items[i].DurationMinutes)
 		if err != nil {
@@ -133,8 +144,7 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 		}
 		workout.Items[i].ID = int(itemID)
 	}
-	if err := tx.Commit(); err != nil {
-		api.WriteError(w, http.StatusInternalServerError, "Error committing workout", err)
+	if !commitWorkoutRecords(w, r, tx, userID, names...) {
 		return
 	}
 
@@ -237,10 +247,15 @@ func (h *Handler) updateWorkout(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete workout
+// @Description Deletes the workout and its items and recalculates affected personal records in one transaction.
 // @Tags workouts
 // @Security BearerAuth
 // @Param id path int true "Workout ID"
 // @Success 204 "No Content"
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 401 {object} api.ErrorResponse
+// @Failure 404 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
 // @Router /workouts/{id} [delete]
 func (h *Handler) deleteWorkout(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
@@ -248,18 +263,55 @@ func (h *Handler) deleteWorkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := api.PathInt(w, r, "id")
+	id, ok := api.PositivePathInt(w, r, "id")
 	if !ok {
 		return
 	}
 
-	result, err := h.DB.Exec(`DELETE FROM workouts WHERE id = ? AND user_id = ?`, id, userID)
+	tx, err := h.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to begin workout deletion", err)
+		return
+	}
+	defer api.Rollback(tx)
+	rows, err := tx.QueryContext(r.Context(), `
+		SELECT DISTINCT i.exercise_name FROM workout_item i
+		JOIN workouts w ON w.id = i.workout_id
+		WHERE w.id = ? AND w.user_id = ?`, id, userID)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to read workout exercises", err)
+		return
+	}
+	var names []string
+	for rows.Next() {
+		var name sql.NullString
+		if err := rows.Scan(&name); err != nil {
+			rows.Close()
+			api.WriteError(w, http.StatusInternalServerError, "Failed to read workout exercise", err)
+			return
+		}
+		names = append(names, name.String)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		api.WriteError(w, http.StatusInternalServerError, "Failed to iterate workout exercises", err)
+		return
+	}
+	if err := rows.Close(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to close workout exercises", err)
+		return
+	}
+
+	result, err := tx.ExecContext(r.Context(), `DELETE FROM workouts WHERE id = ? AND user_id = ?`, id, userID)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Error deleting workout", err)
 		return
 	}
 
 	if !api.CheckAffected(w, result, "Workout not found") {
+		return
+	}
+	if !commitWorkoutRecords(w, r, tx, userID, names...) {
 		return
 	}
 

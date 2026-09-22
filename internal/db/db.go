@@ -116,6 +116,11 @@ var migrations = []migration{
 		disableForeignKeys: true,
 		up:                 migratePasswordsToBlob,
 	},
+	{
+		version: 3,
+		name:    "personal exercise records and historical backfill",
+		up:      migratePersonalRecords,
+	},
 }
 
 // InitDB opens the application's SQLite database and applies all migrations.

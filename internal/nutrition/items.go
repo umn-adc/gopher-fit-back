@@ -2,17 +2,25 @@ package nutrition
 
 import (
 	"net/http"
+	"strings"
 
 	"gopherfit/internal/api"
 )
 
 // @Summary Update meal item
+// @Description Updates an item only within a meal owned by the caller. IDs come from the path; body IDs are ignored. Name must be nonblank and nutrition values must be nonnegative integers.
 // @Tags nutrition
 // @Security BearerAuth
+// @Accept json
+// @Produce json
 // @Param id path int true "Meal ID"
 // @Param itemId path int true "Item ID"
 // @Param request body MealItem true "Meal item data"
 // @Success 200 {object} MealItem
+// @Failure 400 {object} api.ErrorResponse "Invalid IDs, JSON, name, or nutrition values"
+// @Failure 401 {object} api.ErrorResponse "Authentication required"
+// @Failure 404 {object} api.ErrorResponse "Meal item missing or not owned by caller"
+// @Failure 500 {object} api.ErrorResponse "Database failure"
 // @Router /nutrition/meals/{id}/items/{itemId} [put]
 func (h *Handler) updateMealItem(w http.ResponseWriter, r *http.Request) {
 	userID, ok := api.GetUserID(w, r)
@@ -20,12 +28,12 @@ func (h *Handler) updateMealItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mealID, ok := api.PathInt(w, r, "id")
+	mealID, ok := api.PositivePathInt(w, r, "id")
 	if !ok {
 		return
 	}
 
-	itemID, ok := api.PathInt(w, r, "itemId")
+	itemID, ok := api.PositivePathInt(w, r, "itemId")
 	if !ok {
 		return
 	}
@@ -34,18 +42,21 @@ func (h *Handler) updateMealItem(w http.ResponseWriter, r *http.Request) {
 	if !api.DecodeJSON(w, r, &req) {
 		return
 	}
+	if strings.TrimSpace(req.Name) == "" || req.Calories < 0 || req.Protein < 0 || req.Carbs < 0 || req.Fat < 0 {
+		api.WriteError(w, http.StatusBadRequest, "Name is required and nutrition values must be nonnegative", nil)
+		return
+	}
 
-	res, err := h.DB.Exec(`
-		UPDATE meal_items 
-
+	res, err := h.DB.ExecContext(r.Context(), `
+		UPDATE meal_items
 		SET name = ?,
 		    calories = ?,
 		    protein = ?,
 		    carbs = ?,
 		    fat = ?
-		WHERE id = ? 
+		WHERE id = ?
 		AND meal_id = ?
-				`,
+		AND EXISTS (SELECT 1 FROM meals WHERE id = meal_items.meal_id AND user_id = ?)`,
 		req.Name, req.Calories, req.Protein, req.Carbs, req.Fat,
 		itemID, mealID, userID)
 
@@ -58,6 +69,8 @@ func (h *Handler) updateMealItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.ID = itemID
+	req.MealID = mealID
 	api.WriteSuccess(w, http.StatusOK, req)
 }
 

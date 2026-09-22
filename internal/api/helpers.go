@@ -59,6 +59,19 @@ func PathInt(w http.ResponseWriter, r *http.Request, key string) (int, bool) {
 	return v, true
 }
 
+// PositivePathInt parses a positive resource ID, returning 400 otherwise.
+func PositivePathInt(w http.ResponseWriter, r *http.Request, key string) (int, bool) {
+	id, ok := PathInt(w, r, key)
+	if !ok {
+		return 0, false
+	}
+	if id <= 0 {
+		WriteError(w, http.StatusBadRequest, "Invalid "+key, nil)
+		return 0, false
+	}
+	return id, true
+}
+
 // CheckAffected checks that at least one row was affected by a DB exec.
 // Writes 404 and returns false if zero rows were affected.
 //
