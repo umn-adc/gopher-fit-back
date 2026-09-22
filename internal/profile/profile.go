@@ -7,7 +7,6 @@ import (
 
 	"gopherfit/internal/api"
 	"gopherfit/internal/auth"
-	"gopherfit/internal/middleware"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -49,15 +48,25 @@ func (h *Handler) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 		&sportsJSON,
 	)
 	if err != nil {
-		api.WriteError(w, http.StatusNotFound, "Profile not found", err)
+		if err != sql.ErrNoRows {
+			api.WriteError(w, http.StatusInternalServerError, "Failed to fetch profile", err)
+			return
+		}
+		api.WriteError(w, http.StatusNotFound, "Profile not found", nil)
 		return
 	}
 
 	if goalsJSON.Valid && goalsJSON.String != "" {
-		json.Unmarshal([]byte(goalsJSON.String), &profile.Goals)
+		if err := json.Unmarshal([]byte(goalsJSON.String), &profile.Goals); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Failed to decode profile goals", err)
+			return
+		}
 	}
 	if sportsJSON.Valid && sportsJSON.String != "" {
-		json.Unmarshal([]byte(sportsJSON.String), &profile.Sports)
+		if err := json.Unmarshal([]byte(sportsJSON.String), &profile.Sports); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Failed to decode profile sports", err)
+			return
+		}
 	}
 
 	api.WriteSuccess(w, http.StatusOK, profile)
@@ -80,16 +89,31 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	goalsJSON, _ := json.Marshal(profile.Goals)
-	sportsJSON, _ := json.Marshal(profile.Sports)
+	goalsJSON, err := json.Marshal(profile.Goals)
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid goals", err)
+		return
+	}
+	sportsJSON, err := json.Marshal(profile.Sports)
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid sports", err)
+		return
+	}
 
-	_, err := h.DB.Exec(`
+	res, err := h.DB.Exec(`
 		UPDATE profiles
 		SET name = ?, age = ?, height = ?, weight = ?, gender = ?, activity_level = ?, goals = ?, sports = ?
 		WHERE user_id = ?
 	`, profile.Name, profile.Age, profile.Height, profile.Weight, profile.Gender, profile.ActivityLevel, string(goalsJSON), string(sportsJSON), userID)
 	if err != nil {
+		if api.IsCheckViolation(err) {
+			api.WriteError(w, http.StatusBadRequest, "Invalid profile", nil)
+			return
+		}
 		api.WriteError(w, http.StatusInternalServerError, "Failed to update profile", err)
+		return
+	}
+	if !api.CheckAffected(w, res, "Profile not found") {
 		return
 	}
 
@@ -104,10 +128,8 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} map[string]any
 // @Router /profile/username [put]
 func (h *Handler) handleUpdateUsername(w http.ResponseWriter, r *http.Request) {
-
-	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	userID, ok := api.GetUserID(w, r)
 	if !ok {
-		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -127,14 +149,21 @@ func (h *Handler) handleUpdateUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.DB.Exec(
+	res, err := h.DB.Exec(
 		`UPDATE users SET username = ? WHERE id = ?`,
 		req.Username,
 		userID,
 	)
 
 	if err != nil {
+		if api.IsUniqueViolation(err) {
+			api.WriteError(w, http.StatusConflict, "Username already exists", nil)
+			return
+		}
 		api.WriteError(w, http.StatusInternalServerError, "Failed to update username", err)
+		return
+	}
+	if !api.CheckAffected(w, res, "User not found") {
 		return
 	}
 
@@ -151,10 +180,8 @@ func (h *Handler) handleUpdateUsername(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} map[string]any
 // @Router /profile/password [put]
 func (h *Handler) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
-
-	userID, ok := r.Context().Value(middleware.CtxUserIDKey).(int)
+	userID, ok := api.GetUserID(w, r)
 	if !ok {
-		api.WriteError(w, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -169,18 +196,22 @@ func (h *Handler) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var currentHash string
+	var currentHash []byte
 	err := h.DB.QueryRow(
 		`SELECT password FROM users WHERE id = ?`,
 		userID,
 	).Scan(&currentHash)
 
 	if err != nil {
-		api.WriteError(w, http.StatusInternalServerError, "User not found", err)
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "User not found", nil)
+			return
+		}
+		api.WriteError(w, http.StatusInternalServerError, "Failed to read user", err)
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.OldPassword)); err != nil {
+	if err := bcrypt.CompareHashAndPassword(currentHash, []byte(req.OldPassword)); err != nil {
 		api.WriteError(w, http.StatusUnauthorized, "Incorrect Password", nil)
 		return
 	}
@@ -196,14 +227,17 @@ func (h *Handler) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.DB.Exec(
+	res, err := h.DB.Exec(
 		`UPDATE users SET password = ? WHERE id = ?`,
-		string(newHash),
+		newHash,
 		userID,
 	)
 
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Failed to update password", err)
+		return
+	}
+	if !api.CheckAffected(w, res, "User not found") {
 		return
 	}
 

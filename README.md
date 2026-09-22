@@ -21,10 +21,15 @@ Once you're in, check your dependencies by running
 go mod tidy
 ```
 
-To start the Go server nsure you're in project root, then run
+To start the Go server, ensure you're in the project root, then run
 ```
+$env:JWT_SECRET = "replace-with-a-long-random-secret"
 go run .
 ```
+
+On macOS or Linux, set the same required variable with
+`export JWT_SECRET="replace-with-a-long-random-secret"`. The server refuses to
+start without a JWT secret; do not commit real secrets to the repository.
 
 You should now see in the terminal:
 ```

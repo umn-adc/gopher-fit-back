@@ -1,6 +1,7 @@
 package nutrition
 
 import (
+	"database/sql"
 	"net/http"
 
 	"gopherfit/internal/api"
@@ -32,11 +33,23 @@ func (h *Handler) getUserMeals(w http.ResponseWriter, r *http.Request) {
 	meals := []Meal{}
 	for rows.Next() {
 		var m Meal
-		rows.Scan(&m.ID, &m.UserID, &m.Date, &m.MealType, &m.Time, &m.TotalCalories)
+		if err := rows.Scan(&m.ID, &m.UserID, &m.Date, &m.MealType, &m.Time, &m.TotalCalories); err != nil {
+			rows.Close()
+			api.WriteError(w, http.StatusInternalServerError, "failed to read meals", err)
+			return
+		}
 		m.Items = []MealItem{}
 		meals = append(meals, m)
 	}
-	rows.Close()
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		api.WriteError(w, http.StatusInternalServerError, "failed while reading meals", err)
+		return
+	}
+	if err := rows.Close(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to close meal query", err)
+		return
+	}
 
 	for i := range meals {
 		itemRows, err := h.DB.Query(`
@@ -48,10 +61,22 @@ func (h *Handler) getUserMeals(w http.ResponseWriter, r *http.Request) {
 		}
 		for itemRows.Next() {
 			var item MealItem
-			itemRows.Scan(&item.ID, &item.MealID, &item.Name, &item.Calories, &item.Protein, &item.Carbs, &item.Fat)
+			if err := itemRows.Scan(&item.ID, &item.MealID, &item.Name, &item.Calories, &item.Protein, &item.Carbs, &item.Fat); err != nil {
+				itemRows.Close()
+				api.WriteError(w, http.StatusInternalServerError, "failed to read meal item", err)
+				return
+			}
 			meals[i].Items = append(meals[i].Items, item)
 		}
-		itemRows.Close()
+		if err := itemRows.Err(); err != nil {
+			itemRows.Close()
+			api.WriteError(w, http.StatusInternalServerError, "failed while reading meal items", err)
+			return
+		}
+		if err := itemRows.Close(); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "failed to close meal item query", err)
+			return
+		}
 	}
 
 	api.WriteSuccess(w, http.StatusOK, meals)
@@ -83,7 +108,11 @@ func (h *Handler) addMeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, _ := res.LastInsertId()
+	id, err := res.LastInsertId()
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read meal ID", err)
+		return
+	}
 	meal.ID = int(id)
 	meal.UserID = userID
 	meal.Items = []MealItem{}
@@ -111,7 +140,11 @@ func (h *Handler) getMeal(w http.ResponseWriter, r *http.Request) {
 	err := h.DB.QueryRow(`SELECT id, user_id, date, meal_type, time FROM meals WHERE id = ? AND user_id = ?`, mealID, userID).
 		Scan(&meal.ID, &meal.UserID, &meal.Date, &meal.MealType, &meal.Time)
 	if err != nil {
-		api.WriteError(w, http.StatusNotFound, "Meal not found", err)
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "Meal not found", nil)
+			return
+		}
+		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch meal", err)
 		return
 	}
 
@@ -125,9 +158,16 @@ func (h *Handler) getMeal(w http.ResponseWriter, r *http.Request) {
 	meal.Items = []MealItem{}
 	for itemRows.Next() {
 		var item MealItem
-		itemRows.Scan(&item.ID, &item.MealID, &item.Name, &item.Calories, &item.Protein, &item.Carbs, &item.Fat)
+		if err := itemRows.Scan(&item.ID, &item.MealID, &item.Name, &item.Calories, &item.Protein, &item.Carbs, &item.Fat); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Failed to read meal item", err)
+			return
+		}
 		meal.Items = append(meal.Items, item)
 		meal.TotalCalories += item.Calories
+	}
+	if err := itemRows.Err(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed while reading meal items", err)
+		return
 	}
 
 	api.WriteSuccess(w, http.StatusOK, meal)
@@ -170,7 +210,11 @@ func (h *Handler) addMealItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, _ := res.LastInsertId()
+	id, err := res.LastInsertId()
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read meal item ID", err)
+		return
+	}
 	mealItem.ID = int(id)
 	mealItem.MealID = mealID
 	api.WriteSuccess(w, http.StatusCreated, mealItem)

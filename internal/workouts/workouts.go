@@ -1,6 +1,7 @@
 package workouts
 
 import (
+	"database/sql"
 	"net/http"
 
 	"gopherfit/internal/api"
@@ -26,11 +27,23 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 	workouts := []Workout{}
 	for rows.Next() {
 		var workout Workout
-		rows.Scan(&workout.ID, &workout.UserID, &workout.WorkoutName, &workout.Duration)
+		if err := rows.Scan(&workout.ID, &workout.UserID, &workout.WorkoutName, &workout.Duration); err != nil {
+			rows.Close()
+			api.WriteError(w, http.StatusInternalServerError, "Error reading workouts", err)
+			return
+		}
 		workout.Items = []WorkoutItem{}
 		workouts = append(workouts, workout)
 	}
-	rows.Close()
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		api.WriteError(w, http.StatusInternalServerError, "Error while reading workouts", err)
+		return
+	}
+	if err := rows.Close(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error closing workout query", err)
+		return
+	}
 
 	for i := range workouts {
 		itemRows, err := h.DB.Query(`
@@ -42,10 +55,22 @@ func (h *Handler) getWorkouts(w http.ResponseWriter, r *http.Request) {
 		}
 		for itemRows.Next() {
 			var item WorkoutItem
-			itemRows.Scan(&item.ID, &item.WorkoutID, &item.ExerciseName, &item.Sets, &item.Reps, &item.Weight, &item.DurationMinutes)
+			if err := itemRows.Scan(&item.ID, &item.WorkoutID, &item.ExerciseName, &item.Sets, &item.Reps, &item.Weight, &item.DurationMinutes); err != nil {
+				itemRows.Close()
+				api.WriteError(w, http.StatusInternalServerError, "Error reading workout item", err)
+				return
+			}
 			workouts[i].Items = append(workouts[i].Items, item)
 		}
-		itemRows.Close()
+		if err := itemRows.Err(); err != nil {
+			itemRows.Close()
+			api.WriteError(w, http.StatusInternalServerError, "Error while reading workout items", err)
+			return
+		}
+		if err := itemRows.Close(); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Error closing workout item query", err)
+			return
+		}
 	}
 
 	api.WriteSuccess(w, http.StatusOK, workouts)
@@ -70,35 +95,48 @@ func (h *Handler) createWorkout(w http.ResponseWriter, r *http.Request) {
 
 	workout.UserID = userID
 
-	tx, err := h.DB.Begin()
+	tx, err := h.DB.BeginTx(r.Context(), nil)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Error beginning transaction", err)
 		return
 	}
+	defer api.Rollback(tx)
+
 	result, err := tx.Exec(`
 		INSERT INTO workouts (user_id, workout_name, duration) VALUES (?, ?, ?)
 	`, workout.UserID, workout.WorkoutName, workout.Duration)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Error creating workout", err)
-		tx.Rollback()
 		return
 	}
 
-	workoutID, _ := result.LastInsertId()
+	workoutID, err := result.LastInsertId()
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error reading workout ID", err)
+		return
+	}
 	workout.ID = int(workoutID)
 
 	for i := range workout.Items {
 		workout.Items[i].WorkoutID = workout.ID
-		_, err := tx.Exec(`
+		itemResult, err := tx.Exec(`
 		INSERT INTO workout_item (workout_id, exercise_name, sets, reps, weight, duration_minutes) VALUES (?, ?, ?, ?, ?, ?)
 		`, workout.ID, workout.Items[i].ExerciseName, workout.Items[i].Sets, workout.Items[i].Reps, workout.Items[i].Weight, workout.Items[i].DurationMinutes)
 		if err != nil {
 			api.WriteError(w, http.StatusInternalServerError, "Error creating workout item", err)
-			tx.Rollback()
 			return
 		}
+		itemID, err := itemResult.LastInsertId()
+		if err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Error reading workout item ID", err)
+			return
+		}
+		workout.Items[i].ID = int(itemID)
 	}
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error committing workout", err)
+		return
+	}
 
 	if workout.Items == nil {
 		workout.Items = []WorkoutItem{}
@@ -127,7 +165,11 @@ func (h *Handler) getWorkout(w http.ResponseWriter, r *http.Request) {
 	err := h.DB.QueryRow(`SELECT id, user_id, workout_name, duration FROM workouts WHERE id = ? AND user_id = ?`, id, userID).
 		Scan(&workout.ID, &workout.UserID, &workout.WorkoutName, &workout.Duration)
 	if err != nil {
-		api.WriteError(w, http.StatusNotFound, "Workout not found", err)
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "Workout not found", nil)
+			return
+		}
+		api.WriteError(w, http.StatusInternalServerError, "Error fetching workout", err)
 		return
 	}
 
@@ -141,8 +183,15 @@ func (h *Handler) getWorkout(w http.ResponseWriter, r *http.Request) {
 	workout.Items = []WorkoutItem{}
 	for rows.Next() {
 		var item WorkoutItem
-		rows.Scan(&item.ID, &item.WorkoutID, &item.ExerciseName, &item.Sets, &item.Reps, &item.Weight, &item.DurationMinutes)
+		if err := rows.Scan(&item.ID, &item.WorkoutID, &item.ExerciseName, &item.Sets, &item.Reps, &item.Weight, &item.DurationMinutes); err != nil {
+			api.WriteError(w, http.StatusInternalServerError, "Error reading workout item", err)
+			return
+		}
 		workout.Items = append(workout.Items, item)
+	}
+	if err := rows.Err(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Error while reading workout items", err)
+		return
 	}
 
 	api.WriteSuccess(w, http.StatusOK, workout)

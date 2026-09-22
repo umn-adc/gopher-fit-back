@@ -2,7 +2,6 @@ package auth
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
 
 	"gopherfit/internal/api"
@@ -16,13 +15,17 @@ import (
 // @Success 200 {object} AuthResponse
 // @Router /auth/login [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+	if h.Tokens == nil {
+		api.WriteError(w, http.StatusInternalServerError, "Authentication is not configured", nil)
 		return
 	}
 
-	var hashPasswd string
+	var user User
+	if !api.DecodeJSON(w, r, &user) {
+		return
+	}
+
+	var hashPasswd []byte
 	if err := h.DB.QueryRow(`SELECT id, password FROM users WHERE username=?`, user.Username).Scan(&user.ID, &hashPasswd); err != nil {
 		if err == sql.ErrNoRows {
 			api.WriteError(w, http.StatusNotFound, "User not found", nil)
@@ -32,12 +35,12 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(hashPasswd), []byte(user.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword(hashPasswd, []byte(user.Password)); err != nil {
 		api.WriteError(w, http.StatusUnauthorized, "Invalid password", nil)
 		return
 	}
 
-	tokenString, err := createToken(user)
+	tokenString, err := h.Tokens.CreateToken(user)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Error creating token", err)
 		return

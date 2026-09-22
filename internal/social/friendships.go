@@ -1,9 +1,29 @@
 package social
 
 import (
-	"gopherfit/internal/api"
+	"database/sql"
+	"fmt"
 	"net/http"
+
+	"gopherfit/internal/api"
 )
+
+func scanFriendships(rows *sql.Rows) ([]Friendship, error) {
+	defer rows.Close()
+
+	friendships := []Friendship{}
+	for rows.Next() {
+		var friendship Friendship
+		if err := rows.Scan(&friendship.User1ID, &friendship.User2ID, &friendship.ActionUserID, &friendship.Status); err != nil {
+			return nil, fmt.Errorf("scan friendship: %w", err)
+		}
+		friendships = append(friendships, friendship)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate friendships: %w", err)
+	}
+	return friendships, nil
+}
 
 // @Summary Get users relationships
 // @Tags social
@@ -28,13 +48,11 @@ func (h *Handler) getFriendships(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	friendships := []Friendship{}
-	for rows.Next() {
-		var f Friendship
-		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
-		friendships = append(friendships, f)
+	friendships, err := scanFriendships(rows)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read relationships", err)
+		return
 	}
-	rows.Close()
 
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
@@ -63,13 +81,11 @@ func (h *Handler) getAccepted(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	friendships := []Friendship{}
-	for rows.Next() {
-		var f Friendship
-		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
-		friendships = append(friendships, f)
+	friendships, err := scanFriendships(rows)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read friends", err)
+		return
 	}
-	rows.Close()
 
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
@@ -98,13 +114,11 @@ func (h *Handler) getOutgoingRequests(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	friendships := []Friendship{}
-	for rows.Next() {
-		var f Friendship
-		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
-		friendships = append(friendships, f)
+	friendships, err := scanFriendships(rows)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read outgoing requests", err)
+		return
 	}
-	rows.Close()
 
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
@@ -134,13 +148,11 @@ func (h *Handler) getIncomingRequests(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	friendships := []Friendship{}
-	for rows.Next() {
-		var f Friendship
-		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
-		friendships = append(friendships, f)
+	friendships, err := scanFriendships(rows)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read incoming requests", err)
+		return
 	}
-	rows.Close()
 
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
@@ -169,13 +181,11 @@ func (h *Handler) getOutgoingBlocks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	friendships := []Friendship{}
-	for rows.Next() {
-		var f Friendship
-		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
-		friendships = append(friendships, f)
+	friendships, err := scanFriendships(rows)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read outgoing blocks", err)
+		return
 	}
-	rows.Close()
 
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
@@ -205,13 +215,11 @@ func (h *Handler) getIncomingBlocks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	friendships := []Friendship{}
-	for rows.Next() {
-		var f Friendship
-		rows.Scan(&f.User1ID, &f.User2ID, &f.ActionUserID, &f.Status)
-		friendships = append(friendships, f)
+	friendships, err := scanFriendships(rows)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read incoming blocks", err)
+		return
 	}
-	rows.Close()
 
 	api.WriteSuccess(w, http.StatusOK, friendships)
 }
@@ -247,6 +255,10 @@ func (h *Handler) getFriendship(w http.ResponseWriter, r *http.Request) {
 		&friendship.User1ID, &friendship.User2ID, &friendship.ActionUserID, &friendship.Status)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "Friendship not found", nil)
+			return
+		}
 		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch friendship", err)
 		return
 	}
@@ -299,6 +311,10 @@ func (h *Handler) addFriendship(w http.ResponseWriter, r *http.Request) {
 	`, user1, user2, userID, friendship.Status)
 
 	if err != nil {
+		if api.IsUniqueViolation(err) {
+			api.WriteError(w, http.StatusConflict, "Friendship already exists", nil)
+			return
+		}
 		api.WriteError(w, http.StatusInternalServerError, "failed to insert friendship", err)
 		return
 	}
@@ -363,6 +379,14 @@ func (h *Handler) updateFriendship(w http.ResponseWriter, r *http.Request) {
 		WHERE user1_id = ? AND user2_id = ?`,
 		user1, user2).Scan(
 		&og.User1ID, &og.User2ID, &og.ActionUserID, &og.Status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "Friendship not found", nil)
+			return
+		}
+		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch friendship", err)
+		return
+	}
 
 	//Security Cases
 	// Changing users
@@ -465,7 +489,11 @@ func (h *Handler) deleteFriendship(w http.ResponseWriter, r *http.Request) {
 		&og.User1ID, &og.User2ID, &og.ActionUserID, &og.Status)
 
 	if err != nil {
-		api.WriteError(w, http.StatusNotFound, "Friendship not found", err)
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "Friendship not found", nil)
+			return
+		}
+		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch friendship", err)
 		return
 	}
 

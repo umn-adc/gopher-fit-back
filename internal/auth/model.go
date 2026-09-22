@@ -58,4 +58,3 @@ type Claims struct {
 	Username string
 	jwt.RegisteredClaims
 }
-

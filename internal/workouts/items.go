@@ -43,7 +43,11 @@ func (h *Handler) addWorkoutItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, _ := res.LastInsertId()
+	id, err := res.LastInsertId()
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "failed to read workout item ID", err)
+		return
+	}
 	item.ID = int(id)
 	item.WorkoutID = workoutID
 	api.WriteSuccess(w, http.StatusCreated, item)

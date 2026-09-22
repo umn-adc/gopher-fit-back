@@ -16,16 +16,17 @@
 package auth
 
 import (
-	"net/http"
 	"database/sql"
+	"net/http"
 )
 
 type Handler struct {
-	DB *sql.DB
+	DB     *sql.DB
+	Tokens *TokenService
 }
 
-func NewHandler(db *sql.DB) *Handler {
-	return &Handler{DB: db}
+func NewHandler(db *sql.DB, tokens *TokenService) *Handler {
+	return &Handler{DB: db, Tokens: tokens}
 }
 
 func (h *Handler) RegisterRoutes() *http.ServeMux {

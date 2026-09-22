@@ -1,1 +1,2 @@
 gopherfit.db
+*.db.pre-migrations.bak

@@ -16,13 +16,17 @@ import (
 // @Success 201 {object} AuthResponse
 // @Router /auth/register [post]
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		api.WriteError(w, http.StatusBadRequest, "Invalid JSON", err)
+	if h.Tokens == nil {
+		api.WriteError(w, http.StatusInternalServerError, "Authentication is not configured", nil)
 		return
 	}
 
-	if !validUsername(user.Username) || !validPasswd(user.Password) {
+	var user User
+	if !api.DecodeJSON(w, r, &user) {
+		return
+	}
+
+	if !ValidUsername(user.Username) || !ValidPasswd(user.Password) {
 		api.WriteError(w, http.StatusBadRequest, "Invalid credentials", nil)
 		return
 	}
@@ -33,8 +37,30 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.DB.Exec(`INSERT INTO users (username, password) VALUES (?, ?)`, user.Username, hashedPasswd)
+	goalsJSON, err := json.Marshal(user.Goals)
 	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid goals", err)
+		return
+	}
+	sportsJSON, err := json.Marshal(user.Sports)
+	if err != nil {
+		api.WriteError(w, http.StatusBadRequest, "Invalid sports", err)
+		return
+	}
+
+	tx, err := h.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to begin registration", err)
+		return
+	}
+	defer api.Rollback(tx)
+
+	res, err := tx.Exec(`INSERT INTO users (username, password) VALUES (?, ?)`, user.Username, hashedPasswd)
+	if err != nil {
+		if api.IsUniqueViolation(err) {
+			api.WriteError(w, http.StatusConflict, "Username already exists", nil)
+			return
+		}
 		api.WriteError(w, http.StatusInternalServerError, "Failed to create user", err)
 		return
 	}
@@ -46,18 +72,24 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	user.ID = int(id)
 
-	goalsJSON, _ := json.Marshal(user.Goals)
-	sportsJSON, _ := json.Marshal(user.Sports)
-
-	_, err = h.DB.Exec(`INSERT INTO profiles (user_id, name, age, height, weight, gender, activity_level, goals, sports)
+	_, err = tx.Exec(`INSERT INTO profiles (user_id, name, age, height, weight, gender, activity_level, goals, sports)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		user.ID, user.Name, user.Age, user.Height, user.Weight, user.Gender, user.ActivityLevel, string(goalsJSON), string(sportsJSON))
 	if err != nil {
+		if api.IsCheckViolation(err) {
+			api.WriteError(w, http.StatusBadRequest, "Invalid profile", nil)
+			return
+		}
 		api.WriteError(w, http.StatusInternalServerError, "Failed to create profile", err)
 		return
 	}
 
-	tokenString, err := createToken(user)
+	if err := tx.Commit(); err != nil {
+		api.WriteError(w, http.StatusInternalServerError, "Failed to commit registration", err)
+		return
+	}
+
+	tokenString, err := h.Tokens.CreateToken(user)
 	if err != nil {
 		api.WriteError(w, http.StatusInternalServerError, "Failed to create token", err)
 		return

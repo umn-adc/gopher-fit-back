@@ -3,32 +3,34 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"gopherfit/internal/api"
 	"gopherfit/internal/auth"
 )
 
-/*
-* Middleware wrapper for our endpoints
-* @param Handler for our endpoint with type http.ServeMux or http.Handler
-*/
-func JWTMiddleware(next http.Handler) http.Handler {
+// JWTMiddleware verifies a Bearer token and adds the authenticated user ID to
+// the request context.
+func JWTMiddleware(tokens *auth.TokenService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenString := r.Header.Get("Authorization")
-		if tokenString == "" {
-			http.Error(w, "Requires JWT Token", http.StatusUnauthorized)
+		if tokens == nil {
+			api.WriteError(w, http.StatusInternalServerError, "Authentication is not configured", nil)
 			return
 		}
 
-		tokenString = tokenString[len("Bearer "):]
-		id, _, err := auth.VerifyToken(tokenString)
+		parts := strings.Fields(r.Header.Get("Authorization"))
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
+			api.WriteError(w, http.StatusUnauthorized, "Requires Bearer JWT token", nil)
+			return
+		}
+
+		id, _, err := tokens.VerifyToken(parts[1])
 		if err != nil {
-			http.Error(w, "Invalid JWT Token", http.StatusUnauthorized)
+			api.WriteError(w, http.StatusUnauthorized, "Invalid JWT token", nil)
 			return
 		}
 
 		ctx := context.WithValue(r.Context(), api.CtxUserIDKey, id)
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

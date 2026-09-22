@@ -21,7 +21,9 @@ func WriteError(w http.ResponseWriter, status int, message string, err error) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
+	if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Error: message}); encodeErr != nil {
+		log.Printf("ERROR encoding error response: %v", encodeErr)
+	}
 }
 
 // WriteSuccess sends JSON success response.
@@ -30,5 +32,7 @@ func WriteError(w http.ResponseWriter, status int, message string, err error) {
 func WriteSuccess(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("ERROR encoding success response: %v", err)
+	}
 }

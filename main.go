@@ -1,7 +1,10 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"gopherfit/internal/auth"
 	"gopherfit/internal/db"
@@ -26,14 +29,22 @@ import (
 // @name Authorization
 // @description Enter your JWT token with the Bearer prefix, e.g. "Bearer eyJhbG..."
 func main() {
+	tokens, err := auth.NewTokenService([]byte(os.Getenv("JWT_SECRET")), 24*time.Hour)
+	if err != nil {
+		log.Fatal("failed to configure authentication: ", err)
+	}
+
 	// Initialize the database
-	conn := db.InitDB()
+	conn, err := db.InitDB()
+	if err != nil {
+		log.Fatal("failed to initialize database: ", err)
+	}
 	defer conn.Close()
 
 	baseMux := http.NewServeMux()
 
 	// Auth handler (no JWT middleware needed)
-	authHandler := auth.NewHandler(conn)
+	authHandler := auth.NewHandler(conn, tokens)
 	baseMux.Handle("/auth/", authHandler.RegisterRoutes())
 
 	// Protected handlers (with JWT middleware)
@@ -42,10 +53,10 @@ func main() {
 	workoutsHandler := workouts.NewHandler(conn)
 	socialHandler := social.NewHandler(conn)
 
-	baseMux.Handle("/profile/", middleware.JWTMiddleware(profileHandler.RegisterRoutes()))
-	baseMux.Handle("/nutrition/", middleware.JWTMiddleware(nutritionHandler.RegisterRoutes()))
-	baseMux.Handle("/workouts/", middleware.JWTMiddleware(workoutsHandler.RegisterRoutes()))
-	baseMux.Handle("/social/", middleware.JWTMiddleware(socialHandler.RegisterRoutes()))
+	baseMux.Handle("/profile/", middleware.JWTMiddleware(tokens, profileHandler.RegisterRoutes()))
+	baseMux.Handle("/nutrition/", middleware.JWTMiddleware(tokens, nutritionHandler.RegisterRoutes()))
+	baseMux.Handle("/workouts/", middleware.JWTMiddleware(tokens, workoutsHandler.RegisterRoutes()))
+	baseMux.Handle("/social/", middleware.JWTMiddleware(tokens, socialHandler.RegisterRoutes()))
 
 	// Swagger UI
 	baseMux.Handle("/swagger/", httpSwagger.Handler(
@@ -54,5 +65,7 @@ func main() {
 
 	println("Listening on port: 3000")
 	println("Swagger UI: http://localhost:3000/swagger/index.html")
-	http.ListenAndServe("localhost:3000", baseMux)
+	if err := http.ListenAndServe("localhost:3000", baseMux); err != nil {
+		log.Fatal("server stopped: ", err)
+	}
 }

@@ -1,6 +1,7 @@
 package nutrition
 
 import (
+	"database/sql"
 	"net/http"
 
 	"gopherfit/internal/api"
@@ -23,7 +24,11 @@ func (h *Handler) getMacroGoals(w http.ResponseWriter, r *http.Request) {
 		FROM macro_goals WHERE user_id = ?`, userID).
 		Scan(&goals.UserID, &goals.CaloriesTarget, &goals.ProteinTarget, &goals.CarbsTarget, &goals.FatTarget)
 	if err != nil {
-		api.WriteError(w, http.StatusNotFound, "Macro goals not found", err)
+		if err == sql.ErrNoRows {
+			api.WriteError(w, http.StatusNotFound, "Macro goals not found", nil)
+			return
+		}
+		api.WriteError(w, http.StatusInternalServerError, "Failed to fetch macro goals", err)
 		return
 	}
 
