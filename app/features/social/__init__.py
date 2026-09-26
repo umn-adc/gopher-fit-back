@@ -1,0 +1,1 @@
+"""Friendships and exercise rankings."""

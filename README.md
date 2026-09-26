@@ -1,54 +1,84 @@
 # Gopher Fit Backend
-Welcome to the backend for **Gopher Fit**, a fitness tracking app built with **Go**, and **SQLite**.  
+
+Python 3.13, FastAPI, Pydantic 2, SQLAlchemy 2, and SQLite. The uncommitted
+Go-to-Python migration is retained, with the original Go source at `legacy/go/`.
+Feature code keeps the router → service → repository boundaries.
 
 ## Setup
-Make sure you have these downloaded
-- [Go 1.22+](https://go.dev/dl/)
-- [Git](https://git-scm.com/)
 
-Then clone this repository into your computer's root folder (recommended)
-```
-https://github.com/umn-adc/gopher-fit-back
-```
-Then enter the project folder and open it in your IDE
-```
-cd gopher-fit-back
-code .
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+
+```sh
+uv python install 3.13
+uv sync --locked
+cp .env.example .env
+# Set JWT_SECRET to a random secret of at least 32 characters.
+uv run alembic upgrade head
+uv run uvicorn app.main:create_app --factory --host localhost --port 3000 --reload --no-access-log
 ```
 
-Once you're in, check your dependencies by running
+Windows: use `Copy-Item .env.example .env`. `.env` is read automatically and
+process environment values take precedence. SQLite is the supported database;
+use an absolute `DATABASE_URL` in deployment.
+
+Swagger UI: `/swagger/index.html`. OpenAPI: `/swagger/doc.json`, with a checked-in
+snapshot at [docs/openapi.json](docs/openapi.json). Health probes are `/health/live`
+and `/health/ready`. Feature routes require `Authorization: Bearer <token>`.
+
+The new authentication contract requires a fresh login after upgrading:
+stateless Go/initial-Python JWTs are rejected. Login/register retain `token`,
+`user_id`, and `username` and add rotating `refresh_token`, `expires_in`, and
+`token_type`. Password changes/reset and logout revoke sessions immediately.
+Read [API and frontend changes](docs/api.md) before updating callers.
+
+Account recovery is **disabled by default**. Accounts originally had only a
+username and password, so users must enroll and verify a recovery email while
+signed in. Configure a real SMTP service with TLS and an HTTPS recovery frontend
+before enabling recovery. There is no token-returning API, console mailer, or
+plaintext token outbox. This repository does not configure a mail provider or
+implement the frontend recovery page.
+
+## Verification
+
+```sh
+uv run pytest -q
+uv run ruff check app migrations tests scripts
+uv run ruff format --check app migrations tests scripts
+uv run mypy
+uv run python -m scripts.export_openapi --check
 ```
-go mod tidy
+
+`make check` runs all checks. Tests use temporary databases, real migrations and
+transactions, and fake SMTP delivery. They do not open the configured app database
+or send mail. [Verification notes](docs/verification.md) record the stall
+investigation and checks. Refresh the contract after route/schema edits:
+
+```sh
+uv run python -m scripts.export_openapi
 ```
 
-To start the Go server nsure you're in project root, then run
+## Existing databases and operations
+
+Read [migrations](docs/migration.md) and [deployment](docs/deployment.md). Keep
+other writers stopped during migration. `0002_backend_lifecycle` adds nullable
+workout timestamps, authentication/recovery/rate-limit tables, and indexes. It
+preserves existing rows and leaves historical workout times unknown. Startup
+requires the current migration head; it never applies migrations automatically.
+
+Create a consistent backup and rehearse restoring to a new file:
+
+```sh
+uv run python -m scripts.backup create --directory ./backups --keep 7
+uv run python -m scripts.backup restore ./backups/SELECTED.sqlite3 ./restored.db
 ```
-go run .
-```
 
-You should now see in the terminal:
-```
-Listening on port: 3000
-```
-## 📚 Readings
-Get a feel for the technologies we’ll be working with!
+Backups include committed WAL data via SQLite's backup API, verify integrity and
+foreign keys, and publish only complete snapshots. See deployment documentation
+for scheduling, retention, access controls, and restore/cutover instructions.
+Local snapshots require separately configured off-host backup storage.
 
-Before starting any project work, take the Knowledge Quiz below to review key technologies and spot any knowledge gaps: https://forms.gle/32umqmV6hDcfohybA
-
-### 1. REST APIs
-Understand how backend services communicate through HTTP requests and JSON.
-- [Learn REST APIs (Codecademy)](https://www.codecademy.com/article/what-is-rest) (Read fully)
-
-### 2. Go Basics
-Familiarize yourself with Go syntax, types and functions/
-- [Learn Go (Official Tour)](https://go.dev/tour) (Read until you are comfortable with basic syntax)
-
-### 3. SQL & SQLite
-Learn how relational databases work and how to query data efficiently.
-- [What is a relational database?](https://cloud.google.com/learn/what-is-a-relational-database) (Read first 3 sections)
-- [Learn SQL / SQLite](https://www.sqlitetutorial.net/) (Read "what is SQLite?", Section 1-3, and Section 9)
-- Optional: Download and learn DB Browser to view the project's SQLite database easily https://sqlitebrowser.org/
-
-## Example Route
-All app endpoints are in the internal/ folder.
-In gopher-fit-back/internal/macros/post.go there is an example route which handles POST /api/macros
+[Architecture](docs/architecture.md) describes module boundaries. Archived Go
+checks remain available with `make legacy-check` (Go 1.24+). The original
+`scripts.verify_legacy` comparison targets the initial Python compatibility
+baseline and is retained as historical tooling; it intentionally does not certify
+the new JWT, validation, timestamp, nested-write, or pagination contracts.
