@@ -1,2 +1,13 @@
-gopherfit.db
-*.db.pre-migrations.bak
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.env
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.bak

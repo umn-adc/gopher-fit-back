@@ -1,0 +1,42 @@
+[project]
+name = "gopher-fit-back"
+version = "1.0.0"
+description = "Gopher Fit API"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastapi>=0.121,<1",
+  "uvicorn>=0.38,<1",
+  "pydantic>=2.12,<3",
+  "pydantic-settings>=2.11,<3",
+  "sqlalchemy>=2.0.44,<2.1",
+  "alembic>=1.17,<2",
+  "bcrypt>=5,<6",
+  "PyJWT>=2.10,<3",
+  "email-validator>=2.2,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4,<10",
+    "httpx>=0.28,<1",
+    "ruff>=0.14,<1",
+    "mypy>=1.18,<2",
+    "httpx2>=2,<3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+faulthandler_timeout = 30
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["app", "scripts/backup.py", "scripts/export_openapi.py"]
