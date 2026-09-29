@@ -4,7 +4,10 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class Schema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    # Responses always emit defaulted fields, so the output schema lists them as required.
+    model_config = ConfigDict(
+        from_attributes=True, json_schema_serialization_defaults_required=True
+    )
 
 
 class RequestSchema(Schema):

@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Any
 
-from pydantic import Field, model_serializer
+from pydantic import Field
 from sqlalchemy import REAL, CheckConstraint, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -106,11 +105,7 @@ class WorkoutResponse(Schema):
     workout_name: str
     duration: int
     occurred_at: datetime | None = None
-    items: list[WorkoutItemResponse] = Field(default_factory=list)
-
-    @model_serializer(mode="wrap")
-    def omit_empty_items(self, handler: Any) -> dict[str, Any]:
-        data: dict[str, Any] = handler(self)
-        if not self.items:
-            data.pop("items", None)
-        return data
+    # Empty collections are omitted from responses, as the Go API did.
+    items: list[WorkoutItemResponse] = Field(
+        default_factory=list, exclude_if=lambda items: not items
+    )

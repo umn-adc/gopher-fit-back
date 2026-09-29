@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from fastapi.responses import JSONResponse
 
 from app.core.database import DatabaseSession
+from app.core.responses import errors
 from app.features.auth.delivery import Delivery
 from app.features.auth.dependencies import CurrentSession, CurrentUser, get_tokens
 from app.features.auth.models import (
@@ -24,7 +25,8 @@ from app.features.auth.service import AuthService
 from app.features.profile.repository import ProfileRepository
 from app.features.profile.service import ProfileService
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+# Every /auth route is throttled per client IP (see OperationsService.throttle).
+router = APIRouter(prefix="/auth", tags=["auth"], responses=errors(429, 500))
 
 
 def get_service(
@@ -48,12 +50,12 @@ def deliver(request: Request, delivery: Delivery | None) -> None:
         request.app.state.metrics.delivery(success)
 
 
-@router.post("/register", status_code=201)
+@router.post("/register", status_code=201, responses=errors(400, (409, "Username already exists")))
 def register(request: RegisterRequest, service: Service) -> AuthResponse:
     return service.register(request)
 
 
-@router.post("/login")
+@router.post("/login", responses=errors(400, (401, "Invalid credentials")))
 def login(request: LoginRequest, service: Service) -> AuthResponse:
     return service.login(request)
 
@@ -61,7 +63,7 @@ def login(request: LoginRequest, service: Service) -> AuthResponse:
 @router.post(
     "/refresh",
     response_model=AuthResponse,
-    responses={401: {"description": "Revoked, expired or reused token"}},
+    responses=errors(400, (401, "Revoked, expired or reused token")),
 )
 def refresh(request: RefreshRequest, service: Service) -> AuthResponse | JSONResponse:
     result = service.refresh(request.refresh_token)
@@ -70,25 +72,33 @@ def refresh(request: RefreshRequest, service: Service) -> AuthResponse | JSONRes
     return result
 
 
-@router.post("/logout", status_code=204)
+@router.post("/logout", status_code=204, responses=errors(401))
 def logout(claims: CurrentSession, service: Service) -> Response:
     service.logout(claims)
     return Response(status_code=204)
 
 
-@router.post("/logout-all", status_code=204)
+@router.post("/logout-all", status_code=204, responses=errors(401))
 def logout_all(claims: CurrentSession, service: Service) -> Response:
     service.logout(claims, all_sessions=True)
     return Response(status_code=204)
 
 
-@router.delete("/account", status_code=204)
+@router.delete(
+    "/account",
+    status_code=204,
+    responses=errors(400, (401, "Access token rejected or password incorrect")),
+)
 def delete_account(request: PasswordConfirmation, user: CurrentUser, service: Service) -> Response:
     service.delete_account(user, request.password)
     return Response(status_code=204)
 
 
-@router.put("/recovery-address", status_code=202)
+@router.put(
+    "/recovery-address",
+    status_code=202,
+    responses=errors(400, (401, "Access token rejected or password incorrect"), 503),
+)
 def enroll_recovery(
     body: RecoveryAddressRequest,
     user: CurrentUser,
@@ -101,13 +111,13 @@ def enroll_recovery(
     return MessageResponse(message="Verification requested")
 
 
-@router.post("/recovery-address/confirm", status_code=204)
+@router.post("/recovery-address/confirm", status_code=204, responses=errors(400, 503))
 def confirm_recovery(body: RecoveryConfirmation, service: Service) -> Response:
     service.confirm_address(body.token)
     return Response(status_code=204)
 
 
-@router.post("/recovery/request", status_code=202)
+@router.post("/recovery/request", status_code=202, responses=errors(400, 503))
 def request_recovery(
     body: RecoveryRequest,
     service: Service,
@@ -119,7 +129,7 @@ def request_recovery(
     return MessageResponse(message="If recovery is available, instructions will be sent")
 
 
-@router.post("/recovery/reset", status_code=204)
+@router.post("/recovery/reset", status_code=204, responses=errors(400, 503))
 def reset_password(body: ResetRequest, service: Service) -> Response:
     service.reset_password(body.token, body.new_password)
     return Response(status_code=204)

@@ -1,10 +1,21 @@
-from pydantic import Field
+from typing import Any
+
+from pydantic import ConfigDict, Field
 from sqlalchemy import CheckConstraint, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 from app.core.schemas import RequestSchema, Schema
 from app.core.validation import Name, Password
+
+GENDERS = ("Male", "Female", "Other")
+ACTIVITY_LEVELS = (
+    "Sedentary",
+    "Lightly Active",
+    "Moderately Active",
+    "Very Active",
+    "Extra Active",
+)
 
 
 class ProfileORM(Base):
@@ -30,7 +41,18 @@ class ProfileORM(Base):
     sports: Mapped[str | None] = mapped_column(Text)
 
 
+def document_profile_choices(schema: dict[str, Any]) -> None:
+    # validate_profile requires both selections on every write. Parsing keeps the legacy
+    # defaults so a missing or unknown selection still returns "Invalid profile".
+    for field, choices in (("gender", GENDERS), ("activity_level", ACTIVITY_LEVELS)):
+        schema["properties"][field].pop("default", None)
+        schema["properties"][field]["enum"] = list(choices)
+        schema["required"] = [*schema.get("required", []), field]
+
+
 class ProfileRequest(RequestSchema):
+    model_config = ConfigDict(json_schema_extra=document_profile_choices)
+
     name: Name
     age: int = Field(default=0, ge=0, le=130)
     height: int = Field(default=0, ge=0, le=300)

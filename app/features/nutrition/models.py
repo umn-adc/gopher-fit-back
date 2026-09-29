@@ -1,9 +1,8 @@
 import re
 from datetime import date as date_value
 from datetime import time as time_value
-from typing import Any
 
-from pydantic import Field, field_validator, model_serializer
+from pydantic import Field, field_validator
 from sqlalchemy import ForeignKey, Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -103,14 +102,8 @@ class MealResponse(Schema):
     meal_type: str
     time: str
     total_calories: int = 0
-    items: list[MealItemResponse] = Field(default_factory=list)
-
-    @model_serializer(mode="wrap")
-    def omit_empty_items(self, handler: Any) -> dict[str, Any]:
-        data: dict[str, Any] = handler(self)
-        if not self.items:
-            data.pop("items", None)
-        return data
+    # Empty collections are omitted from responses, as the Go API did.
+    items: list[MealItemResponse] = Field(default_factory=list, exclude_if=lambda items: not items)
 
 
 class MacroGoalsRequest(RequestSchema):

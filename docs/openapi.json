@@ -34,7 +34,8 @@
           "user_id",
           "username",
           "refresh_token",
-          "expires_in"
+          "expires_in",
+          "token_type"
         ],
         "title": "AuthResponse",
         "type": "object"
@@ -94,22 +95,12 @@
           }
         },
         "required": [
+          "user1_id",
+          "user2_id",
+          "status",
           "action_user_id"
         ],
         "title": "FriendshipResponse",
-        "type": "object"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "title": "Detail",
-            "type": "array"
-          }
-        },
-        "title": "HTTPValidationError",
         "type": "object"
       },
       "HealthResponse": {
@@ -241,7 +232,11 @@
           }
         },
         "required": [
-          "user_id"
+          "user_id",
+          "calories_target",
+          "protein_target",
+          "carbs_target",
+          "fat_target"
         ],
         "title": "MacroGoalsResponse",
         "type": "object"
@@ -327,7 +322,11 @@
         "required": [
           "id",
           "meal_id",
-          "name"
+          "name",
+          "calories",
+          "protein",
+          "carbs",
+          "fat"
         ],
         "title": "MealItemResponse",
         "type": "object"
@@ -380,7 +379,49 @@
         "type": "object"
       },
       "MealResponse": {
-        "additionalProperties": true,
+        "properties": {
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MealItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "meal_type": {
+            "title": "Meal Type",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          },
+          "total_calories": {
+            "default": 0,
+            "title": "Total Calories",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "date",
+          "meal_type",
+          "time",
+          "total_calories"
+        ],
+        "title": "MealResponse",
         "type": "object"
       },
       "MessageResponse": {
@@ -589,13 +630,22 @@
             "type": "string"
           }
         },
+        "required": [
+          "message"
+        ],
         "title": "PasswordResponse",
         "type": "object"
       },
       "ProfileRequest": {
         "properties": {
           "activity_level": {
-            "default": "",
+            "enum": [
+              "Sedentary",
+              "Lightly Active",
+              "Moderately Active",
+              "Very Active",
+              "Extra Active"
+            ],
             "title": "Activity Level",
             "type": "string"
           },
@@ -607,7 +657,11 @@
             "type": "integer"
           },
           "gender": {
-            "default": "",
+            "enum": [
+              "Male",
+              "Female",
+              "Other"
+            ],
             "title": "Gender",
             "type": "string"
           },
@@ -661,7 +715,9 @@
           }
         },
         "required": [
-          "name"
+          "name",
+          "gender",
+          "activity_level"
         ],
         "title": "ProfileRequest",
         "type": "object"
@@ -825,7 +881,13 @@
       "RegisterRequest": {
         "properties": {
           "activity_level": {
-            "default": "",
+            "enum": [
+              "Sedentary",
+              "Lightly Active",
+              "Moderately Active",
+              "Very Active",
+              "Extra Active"
+            ],
             "title": "Activity Level",
             "type": "string"
           },
@@ -837,7 +899,11 @@
             "type": "integer"
           },
           "gender": {
-            "default": "",
+            "enum": [
+              "Male",
+              "Female",
+              "Other"
+            ],
             "title": "Gender",
             "type": "string"
           },
@@ -904,7 +970,9 @@
         "required": [
           "name",
           "username",
-          "password"
+          "password",
+          "gender",
+          "activity_level"
         ],
         "title": "RegisterRequest",
         "type": "object"
@@ -956,46 +1024,6 @@
           "username"
         ],
         "title": "UsernameResponse",
-        "type": "object"
-      },
-      "ValidationError": {
-        "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "title": "Location",
-            "type": "array"
-          },
-          "msg": {
-            "title": "Message",
-            "type": "string"
-          },
-          "type": {
-            "title": "Error Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError",
         "type": "object"
       },
       "WorkoutItemRequest": {
@@ -1077,7 +1105,11 @@
         "required": [
           "id",
           "workout_id",
-          "exercise_name"
+          "exercise_name",
+          "sets",
+          "reps",
+          "weight",
+          "duration_minutes"
         ],
         "title": "WorkoutItemResponse",
         "type": "object"
@@ -1133,7 +1165,51 @@
         "type": "object"
       },
       "WorkoutResponse": {
-        "additionalProperties": true,
+        "properties": {
+          "duration": {
+            "title": "Duration",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkoutItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "workout_name": {
+            "title": "Workout Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "workout_name",
+          "duration",
+          "occurred_at"
+        ],
+        "title": "WorkoutResponse",
         "type": "object"
       }
     },
@@ -1189,7 +1265,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Access token rejected or password incorrect"
           },
           "429": {
             "content": {
@@ -1208,6 +1284,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -1263,7 +1349,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Invalid credentials"
           },
           "429": {
             "content": {
@@ -1282,6 +1368,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "summary": "Login",
@@ -1297,16 +1393,6 @@
           "204": {
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
           "401": {
             "content": {
               "application/json": {
@@ -1315,7 +1401,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
           "429": {
             "content": {
@@ -1334,6 +1420,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -1354,16 +1450,6 @@
           "204": {
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
           "401": {
             "content": {
               "application/json": {
@@ -1372,7 +1458,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
           "429": {
             "content": {
@@ -1391,6 +1477,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -1446,7 +1542,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Access token rejected or password incorrect"
           },
           "429": {
             "content": {
@@ -1465,6 +1561,26 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Account recovery is not configured"
           }
         },
         "security": [
@@ -1505,16 +1621,6 @@
             },
             "description": "Invalid input"
           },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authentication required"
-          },
           "429": {
             "content": {
               "application/json": {
@@ -1532,6 +1638,26 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Account recovery is not configured"
           }
         },
         "summary": "Confirm Recovery",
@@ -1574,16 +1700,6 @@
             },
             "description": "Invalid input"
           },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authentication required"
-          },
           "429": {
             "content": {
               "application/json": {
@@ -1601,6 +1717,26 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Account recovery is not configured"
           }
         },
         "summary": "Request Recovery",
@@ -1636,16 +1772,6 @@
             },
             "description": "Invalid input"
           },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authentication required"
-          },
           "429": {
             "content": {
               "application/json": {
@@ -1663,6 +1789,26 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Account recovery is not configured"
           }
         },
         "summary": "Reset Password",
@@ -1732,6 +1878,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "summary": "Refresh",
@@ -1774,7 +1930,7 @@
             },
             "description": "Invalid input"
           },
-          "401": {
+          "409": {
             "content": {
               "application/json": {
                 "schema": {
@@ -1782,7 +1938,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Username already exists"
           },
           "429": {
             "content": {
@@ -1801,6 +1957,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "summary": "Register",
@@ -1822,44 +1988,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authentication required"
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
           }
         },
         "summary": "Liveness",
@@ -1881,44 +2009,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authentication required"
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
           },
           "503": {
             "content": {
@@ -1944,16 +2034,6 @@
           "200": {
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
           "401": {
             "content": {
               "application/json": {
@@ -1973,24 +2053,6 @@
               }
             },
             "description": "Disabled"
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -2018,16 +2080,6 @@
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
           "401": {
             "content": {
               "application/json": {
@@ -2036,9 +2088,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2046,15 +2098,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "No macro targets configured"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2108,9 +2162,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2118,15 +2172,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2202,9 +2248,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2212,15 +2258,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2274,9 +2312,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2284,15 +2322,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2344,9 +2374,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2354,15 +2384,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2419,9 +2451,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2429,15 +2461,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2497,9 +2531,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2507,15 +2541,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2584,9 +2620,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2594,15 +2630,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2665,9 +2703,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2675,15 +2713,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2761,9 +2801,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2771,15 +2811,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2807,16 +2849,6 @@
             },
             "description": "Successful Response"
           },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
           "401": {
             "content": {
               "application/json": {
@@ -2825,9 +2857,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2835,15 +2867,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Profile not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2897,9 +2931,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -2907,15 +2941,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Profile not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -2971,7 +3007,7 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Access token rejected or old password incorrect"
           },
           "429": {
             "content": {
@@ -2990,6 +3026,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3045,9 +3091,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "409": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3055,15 +3101,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Username already exists"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3122,9 +3170,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3132,15 +3180,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "User not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3216,9 +3266,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3226,15 +3276,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3288,9 +3330,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3298,15 +3340,27 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "User not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Friendship already exists"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3382,9 +3436,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3392,15 +3446,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3476,9 +3522,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3486,15 +3532,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3570,9 +3608,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3580,15 +3618,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3664,9 +3694,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3674,15 +3704,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3758,9 +3780,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3768,15 +3790,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3828,9 +3842,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3838,15 +3852,27 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "409": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Relationship changed; reload before retrying"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3903,9 +3929,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3913,15 +3939,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -3988,9 +4016,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -3998,15 +4026,27 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "409": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Relationship changed; reload before retrying"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4092,9 +4132,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4102,15 +4142,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4186,9 +4218,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4196,15 +4228,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4314,9 +4338,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4324,15 +4348,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4386,9 +4402,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "500": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4396,15 +4412,7 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4456,9 +4464,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4466,15 +4474,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4531,9 +4541,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4541,15 +4551,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4616,9 +4628,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4626,15 +4638,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4703,9 +4717,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4713,15 +4727,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4784,9 +4800,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4794,15 +4810,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [
@@ -4873,9 +4891,9 @@
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Missing, invalid, expired or revoked access token"
           },
-          "429": {
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -4883,15 +4901,17 @@
                 }
               }
             },
-            "description": "Rate limit exceeded",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the next window",
+            "description": "Not found or not owned by the caller"
+          },
+          "500": {
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            }
+            },
+            "description": "Database or stored-data failure"
           }
         },
         "security": [

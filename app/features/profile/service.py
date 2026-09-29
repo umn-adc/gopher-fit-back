@@ -5,6 +5,8 @@ from app.core.errors import AuthenticationFailed, InvalidInput, NotFound, Storag
 from app.features.auth.repository import AuthRepository
 from app.features.auth.security import hash_password, valid_password, verify_password
 from app.features.profile.models import (
+    ACTIVITY_LEVELS,
+    GENDERS,
     PasswordRequest,
     PasswordResponse,
     ProfileRequest,
@@ -16,13 +18,7 @@ from app.features.profile.repository import ProfileRepository
 
 
 def validate_profile(request: ProfileRequest) -> None:
-    if request.gender not in {"Male", "Female", "Other"} or request.activity_level not in {
-        "Sedentary",
-        "Lightly Active",
-        "Moderately Active",
-        "Very Active",
-        "Extra Active",
-    }:
+    if request.gender not in GENDERS or request.activity_level not in ACTIVITY_LEVELS:
         raise InvalidInput("Invalid profile")
 
 

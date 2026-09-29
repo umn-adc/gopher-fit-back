@@ -67,27 +67,10 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
             if engine is None:
                 database.dispose()
 
+    # Each router and route declares the error statuses it can return (app.core.responses).
     app = FastAPI(
         title="GopherFit API",
         version="2.0",
-        responses={
-            400: {
-                "description": "Invalid input",
-                "content": {
-                    "application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}
-                },
-            },
-            401: {"description": "Authentication required"},
-            429: {
-                "description": "Rate limit exceeded",
-                "headers": {
-                    "Retry-After": {
-                        "description": "Seconds until the next window",
-                        "schema": {"type": "integer"},
-                    }
-                },
-            },
-        },
         lifespan=lifespan,
         docs_url="/swagger/index.html",
         redoc_url=None,
@@ -210,7 +193,11 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
 
     def openapi() -> dict[str, object]:
         schema = original_openapi()
-        schema.setdefault("components", {}).setdefault("schemas", {})["ErrorResponse"] = {
+        schemas = schema.setdefault("components", {}).setdefault("schemas", {})
+        # Validation failures use the 400 error envelope, never FastAPI's 422 detail body.
+        schemas.pop("HTTPValidationError", None)
+        schemas.pop("ValidationError", None)
+        schemas["ErrorResponse"] = {
             "type": "object",
             "required": ["error"],
             "properties": {"error": {"type": "string"}},

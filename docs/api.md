@@ -8,6 +8,15 @@ ownership mismatches, 409 conflicts, 429 throttles, and 503 unavailable recovery
 Unknown fields remain ignored; explicit null scalars are rejected unless documented
 as nullable. No 422 `detail` envelope is used. Request IDs appear in `X-Request-ID`.
 
+Each OpenAPI operation declares only the error statuses it can return, all with the
+`ErrorResponse` body. 429 (with `Retry-After`) appears only on throttled routes:
+`/auth/*` and `/profile/password`. Meal and workout responses have typed schemas;
+`items` is optional because empty collections are omitted. Registration and profile
+PUT list `gender` and `activity_level` as required enums, because the service
+rejects any other value with 400 `Invalid profile`. `tests/test_openapi_responses.py`
+validates real responses against the generated document, rejecting undocumented
+keys and statuses.
+
 ## Authentication and account lifecycle
 
 Login/register still return `token`, `user_id`, and `username`, with additions:
