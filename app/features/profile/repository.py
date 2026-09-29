@@ -33,6 +33,7 @@ class ProfileRepository:
                 goals=json.dumps(request.goals),
                 sports=json.dumps(request.sports),
                 unit_preference=request.unit_preference,
+                weekly_workout_target=request.weekly_workout_target,
             )
         )
         self.session.flush()
@@ -47,6 +48,7 @@ class ProfileRepository:
         profile.goals = json.dumps(request.goals)
         profile.sports = json.dumps(request.sports)
         profile.unit_preference = request.unit_preference
+        profile.weekly_workout_target = request.weekly_workout_target
         self.session.flush()
 
     def update_username(self, user_id: int, username: str) -> bool:

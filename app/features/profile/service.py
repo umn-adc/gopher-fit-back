@@ -50,6 +50,7 @@ class ProfileService:
                 sports=json.loads(profile.sports) if profile.sports else None,
                 # Pydantic still validates the stored value against the literal.
                 unit_preference=cast(UnitPreference, profile.unit_preference or "metric"),
+                weekly_workout_target=profile.weekly_workout_target,
             )
         except ValueError as error:
             raise StorageFailure("Failed to decode profile") from error

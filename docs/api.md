@@ -116,6 +116,9 @@ Create, parent update, nested update, and item endpoints share input constraints
 - Profile age is 0–130, height 0–300 cm, weight 0–700 kg; zero means unspecified,
   preserving prior optional numeric defaults. Gender and activity retain the
   existing enums. Goals/sports remain optional string lists.
+  `weekly_workout_target` is an integer 1–14 workouts per week, or `null` for no
+  target (the default, and the value for existing profiles); as part of the full
+  profile replacement, omitting it removes the target.
 - Passwords use the existing policy (seven letters/spaces, uppercase, a number,
   and punctuation/symbol), bcrypt cost 10, and at most **72 UTF-8 bytes**. Oversize
   passwords return 400 everywhere, including login and confirmation. They are

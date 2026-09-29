@@ -777,6 +777,20 @@
             "title": "Unit Preference",
             "type": "string"
           },
+          "weekly_workout_target": {
+            "anyOf": [
+              {
+                "maximum": 14.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workouts per week; null means no target",
+            "title": "Weekly Workout Target"
+          },
           "weight": {
             "default": 0,
             "maximum": 700.0,
@@ -855,6 +869,17 @@
             "title": "User Id",
             "type": "integer"
           },
+          "weekly_workout_target": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Workout Target"
+          },
           "weight": {
             "title": "Weight",
             "type": "integer"
@@ -870,7 +895,8 @@
           "activity_level",
           "goals",
           "sports",
-          "unit_preference"
+          "unit_preference",
+          "weekly_workout_target"
         ],
         "title": "ProfileResponse",
         "type": "object"
@@ -1048,6 +1074,20 @@
             "minLength": 1,
             "title": "Username",
             "type": "string"
+          },
+          "weekly_workout_target": {
+            "anyOf": [
+              {
+                "maximum": 14.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workouts per week; null means no target",
+            "title": "Weekly Workout Target"
           },
           "weight": {
             "default": 0,

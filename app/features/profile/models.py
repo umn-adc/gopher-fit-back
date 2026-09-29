@@ -47,6 +47,12 @@ class ProfileORM(Base):
             "unit_preference IN ('metric', 'imperial')", name="profiles_unit_preference"
         ),
     )
+    # NULL means no weekly workout target.
+    weekly_workout_target: Mapped[int | None] = mapped_column(
+        CheckConstraint(
+            "weekly_workout_target BETWEEN 1 AND 14", name="profiles_weekly_workout_target"
+        )
+    )
 
 
 def document_profile_choices(schema: dict[str, Any]) -> None:
@@ -72,6 +78,9 @@ class ProfileRequest(RequestSchema):
     unit_preference: UnitPreference = Field(
         default="metric", description="Display units; stored values stay kg and cm"
     )
+    weekly_workout_target: int | None = Field(
+        default=None, ge=1, le=14, description="Workouts per week; null means no target"
+    )
 
 
 class ProfileResponse(Schema):
@@ -85,6 +94,7 @@ class ProfileResponse(Schema):
     goals: list[str] | None
     sports: list[str] | None
     unit_preference: UnitPreference
+    weekly_workout_target: int | None
 
 
 class PublicProfileResponse(Schema):

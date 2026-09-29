@@ -172,3 +172,9 @@ foreign keys and `alembic check`.
 `GET /nutrition/summary` (without it the summary query scans the whole `meals`
 table). No rows change. Its downgrade drops the index.
 
+## Revision 0005: weekly workout target
+
+`0005_weekly_target` adds `profiles.weekly_workout_target INTEGER NULL`, checked to
+1–14. Existing profiles keep NULL (no target); nothing is inferred. The downgrade
+refuses; restore a verified backup instead.
+

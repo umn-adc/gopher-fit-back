@@ -135,6 +135,13 @@ def test_auth_and_profile_responses_match_contract(call):
 
     call("GET", "/profile/", 200, token=token)
     call("PUT", "/profile/", 200, token=token, json=profile(goals=None, sports=["Rowing"]))
+    call(
+        "PUT",
+        "/profile/",
+        200,
+        token=token,
+        json=profile(unit_preference="imperial", weekly_workout_target=4),
+    )
     call("PUT", "/profile/", 400, token=token, json=profile(activity_level="Idle"))
     call("PUT", "/profile/username", 200, token=token, json={"username": "renamed"})
     call("PUT", "/profile/username", 409, token=token, json={"username": "user2"})
