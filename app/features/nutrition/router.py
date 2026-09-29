@@ -8,6 +8,9 @@ from app.core.pagination import Pagination
 from app.core.responses import errors
 from app.features.auth.dependencies import CurrentUser
 from app.features.nutrition.models import (
+    FavoriteMealRequest,
+    FavoriteMealResponse,
+    LogFavoriteRequest,
     MacroGoalsRequest,
     MacroGoalsResponse,
     MealDate,
@@ -108,3 +111,40 @@ def update_macro_goals(
     request: MacroGoalsRequest, user: CurrentUser, service: Service
 ) -> MacroGoalsResponse:
     return service.update_macro_goals(user, request)
+
+
+@router.get("/favorites", responses=errors(400))
+def favorites(user: CurrentUser, service: Service, page: Pagination) -> list[FavoriteMealResponse]:
+    return service.favorites(user, page)
+
+
+@router.post("/favorites", status_code=201, responses=errors(400))
+def create_favorite(
+    request: FavoriteMealRequest, user: CurrentUser, service: Service
+) -> FavoriteMealResponse:
+    return service.create_favorite(user, request)
+
+
+@router.get("/favorites/{id}", responses=errors(400, 404))
+def favorite(id: PositiveResourceID, user: CurrentUser, service: Service) -> FavoriteMealResponse:
+    return service.favorite(user, id)
+
+
+@router.put("/favorites/{id}", responses=errors(400, 404))
+def update_favorite(
+    id: PositiveResourceID, request: FavoriteMealRequest, user: CurrentUser, service: Service
+) -> FavoriteMealResponse:
+    return service.update_favorite(user, id, request)
+
+
+@router.delete("/favorites/{id}", status_code=204, responses=errors(400, 404))
+def delete_favorite(id: PositiveResourceID, user: CurrentUser, service: Service) -> Response:
+    service.delete_favorite(user, id)
+    return Response(status_code=204)
+
+
+@router.post("/favorites/{id}/log", status_code=201, responses=errors(400, 404))
+def log_favorite(
+    id: PositiveResourceID, request: LogFavoriteRequest, user: CurrentUser, service: Service
+) -> MealResponse:
+    return service.log_favorite(user, id, request)

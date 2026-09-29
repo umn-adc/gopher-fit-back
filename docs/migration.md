@@ -178,3 +178,13 @@ table). No rows change. Its downgrade drops the index.
 1–14. Existing profiles keep NULL (no target); nothing is inferred. The downgrade
 refuses; restore a verified backup instead.
 
+## Revision 0006: favorite meals
+
+`0006_favorite_meals` creates `favorite_meals` (owner, name, default meal type) and
+`favorite_meal_items` (name and four nutrition integers), both with AUTOINCREMENT
+IDs, indexes for owned pages and child batches, and `ON DELETE CASCADE` from
+`users` and from the parent favorite. No existing table or row changes. The
+downgrade refuses; restore a verified backup instead. This replaces the unfinished
+Go `favorite-meals` branch with a new design (see `branch-triage.md`); none of its
+SQL was reused.
+

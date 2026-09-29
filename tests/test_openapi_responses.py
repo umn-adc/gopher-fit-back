@@ -225,6 +225,32 @@ def test_nutrition_responses_match_contract(call, headers):
     call("DELETE", "/nutrition/meals/{id}", 204, token=token, id=meal["id"])
     call("DELETE", "/nutrition/meals/{id}", 404, token=token, id=meal["id"])
 
+    template = {"name": "Usual", "meal_type": "Lunch", "items": [item]}
+    favorite = call("POST", "/nutrition/favorites", 201, token=token, json=template)
+    call("POST", "/nutrition/favorites", 400, token=token, json={"name": "No type"})
+    call("GET", "/nutrition/favorites", 200, token=token)
+    call("GET", "/nutrition/favorites/{id}", 200, token=token, id=favorite["id"])
+    call("GET", "/nutrition/favorites/{id}", 404, token=token, id=999)
+    call(
+        "PUT",
+        "/nutrition/favorites/{id}",
+        200,
+        token=token,
+        json={**template, "items": []},
+        id=favorite["id"],
+    )
+    call(
+        "POST",
+        "/nutrition/favorites/{id}/log",
+        201,
+        token=token,
+        json={"date": "2026-09-28", "time": "08:00"},
+        id=favorite["id"],
+    )
+    call("POST", "/nutrition/favorites/{id}/log", 400, token=token, json={}, id=favorite["id"])
+    call("DELETE", "/nutrition/favorites/{id}", 204, token=token, id=favorite["id"])
+    call("DELETE", "/nutrition/favorites/{id}", 404, token=token, id=favorite["id"])
+
 
 def test_workout_and_social_responses_match_contract(call, headers):
     token = headers(1)["Authorization"].split()[1]

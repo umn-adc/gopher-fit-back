@@ -303,16 +303,28 @@ def test_account_deletion_cleans_owned_data_and_rolls_back_on_failure(recovery_c
     auth = login(client)
     client.headers.update(bearer(auth))
     enroll(client, mailbox, auth)
-    client.post(
-        "/nutrition/meals",
-        json={"date": "2026-01-01", "meal_type": "Lunch", "items": [{"name": "Rice"}]},
-    )
-    client.put("/nutrition/macros", json={"protein_target": 100})
-    client.post(
-        "/workouts/",
-        json={"workout_name": "Strength", "items": [{"exercise_name": "Bench", "weight": 100}]},
-    )
-    client.post("/social/friendships", json={"user1_id": 1, "user2_id": 2, "status": "pending"})
+    owned = [
+        client.post(
+            "/nutrition/meals",
+            json={"date": "2026-01-01", "meal_type": "Lunch", "items": [{"name": "Rice"}]},
+        ),
+        client.put("/nutrition/macros", json={"protein_target": 100}),
+        client.post(
+            "/nutrition/favorites",
+            json={"name": "Usual", "meal_type": "Lunch", "items": [{"name": "Rice"}]},
+        ),
+        client.post(
+            "/workouts/",
+            json={
+                "workout_name": "Strength",
+                "items": [{"exercise_name": "Bench", "weight": 100, "weight_unit": "kg"}],
+            },
+        ),
+        client.post(
+            "/social/friendships", json={"user1_id": 1, "user2_id": 2, "status": "pending"}
+        ),
+    ]
+    assert [response.status_code for response in owned] == [201, 200, 201, 201, 201]
     assert client.request("DELETE", "/auth/account", json={"password": "wrong"}).status_code == 401
     with engine.begin() as connection:
         connection.exec_driver_sql("""CREATE TRIGGER fail_delete BEFORE DELETE ON meal_items
@@ -333,6 +345,8 @@ def test_account_deletion_cleans_owned_data_and_rolls_back_on_failure(recovery_c
             "meals",
             "meal_items",
             "macro_goals",
+            "favorite_meals",
+            "favorite_meal_items",
             "workouts",
             "workout_item",
             "personal_records",

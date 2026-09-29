@@ -3,7 +3,7 @@ from datetime import date as date_value
 from datetime import time as time_value
 from typing import Annotated
 
-from pydantic import AfterValidator, Field, field_validator
+from pydantic import AfterValidator, Field
 from sqlalchemy import ForeignKey, Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,8 +19,17 @@ def real_date(value: str) -> str:
     return value
 
 
-# Meal dates are local calendar dates; the API never infers a timezone.
+def wall_time(value: str) -> str:
+    if value:
+        if not re.fullmatch(r"\d{2}:\d{2}(:\d{2})?", value):
+            raise ValueError("Use HH:MM or HH:MM:SS local wall time")
+        time_value.fromisoformat(value)
+    return value
+
+
+# Meal dates and times are local wall-clock values; the API never infers a timezone.
 MealDate = Annotated[str, AfterValidator(real_date)]
+MealTime = Annotated[str, AfterValidator(wall_time)]
 
 
 class MealORM(Base):
@@ -63,6 +72,37 @@ class MacroGoalsORM(Base):
     fat_target: Mapped[int | None]
 
 
+class FavoriteMealORM(Base):
+    """A reusable meal template. Logging one copies its items into a new dated meal."""
+
+    __tablename__ = "favorite_meals"
+    __table_args__ = (
+        Index("favorite_meals_user_id_id", "user_id", "id"),
+        {"sqlite_autoincrement": True},
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(Text)
+    meal_type: Mapped[str] = mapped_column(Text)
+
+
+class FavoriteMealItemORM(Base):
+    __tablename__ = "favorite_meal_items"
+    __table_args__ = (
+        Index("favorite_meal_items_favorite_id", "favorite_id"),
+        {"sqlite_autoincrement": True},
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    favorite_id: Mapped[int] = mapped_column(ForeignKey("favorite_meals.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(Text)
+    calories: Mapped[int]
+    protein: Mapped[int]
+    carbs: Mapped[int]
+    fat: Mapped[int]
+
+
 class MealItemRequest(RequestSchema):
     name: Name
     calories: NonnegativeInt = 0
@@ -89,18 +129,9 @@ class MealItemResponse(Schema):
 class MealRequest(RequestSchema):
     date: MealDate
     meal_type: Name
-    time: str = ""
+    time: MealTime = ""
     total_calories: NonnegativeInt = 0
     items: list[NestedMealItemRequest] | None = Field(default=None, max_length=500)
-
-    @field_validator("time")
-    @classmethod
-    def valid_time(cls, value: str) -> str:
-        if value:
-            if not re.fullmatch(r"\d{2}:\d{2}(:\d{2})?", value):
-                raise ValueError("Use HH:MM or HH:MM:SS local wall time")
-            time_value.fromisoformat(value)
-        return value
 
 
 class MealResponse(Schema):
@@ -136,3 +167,38 @@ class NutritionSummaryResponse(Schema):
     carbs: int
     fat: int
     targets: MacroGoalsResponse | None = Field(description="null when no targets are set")
+
+
+class FavoriteMealRequest(RequestSchema):
+    name: Name
+    meal_type: Name
+    items: list[MealItemRequest] | None = Field(
+        default=None,
+        max_length=500,
+        description="Omitted or null on PUT preserves items; a list replaces them all",
+    )
+
+
+class FavoriteMealItemResponse(Schema):
+    id: int
+    favorite_id: int
+    name: str
+    calories: int
+    protein: int
+    carbs: int
+    fat: int
+
+
+class FavoriteMealResponse(Schema):
+    id: int
+    user_id: int
+    name: str
+    meal_type: str
+    total_calories: int
+    items: list[FavoriteMealItemResponse]
+
+
+class LogFavoriteRequest(RequestSchema):
+    date: MealDate
+    time: MealTime = ""
+    meal_type: Name | None = Field(default=None, description="Defaults to the favorite's")

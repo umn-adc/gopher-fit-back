@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.core.pagination import Page
 from app.features.nutrition.models import (
+    FavoriteMealItemORM,
+    FavoriteMealORM,
+    FavoriteMealRequest,
     MacroGoalsORM,
     MacroGoalsRequest,
     MealItemORM,
@@ -123,3 +126,61 @@ class NutritionRepository:
                 index_elements=[MacroGoalsORM.user_id], set_=request.model_dump()
             )
         )
+
+    def favorites(self, user_id: int, page: Page) -> Sequence[FavoriteMealORM]:
+        return self.session.scalars(
+            select(FavoriteMealORM)
+            .where(FavoriteMealORM.user_id == user_id)
+            .order_by(FavoriteMealORM.id)
+            .limit(page.limit)
+            .offset(page.offset)
+        ).all()
+
+    def favorite(self, user_id: int, favorite_id: int) -> FavoriteMealORM | None:
+        return self.session.scalar(
+            select(FavoriteMealORM).where(
+                FavoriteMealORM.id == favorite_id, FavoriteMealORM.user_id == user_id
+            )
+        )
+
+    def favorite_items_for(self, favorite_ids: list[int]) -> dict[int, list[FavoriteMealItemORM]]:
+        grouped: dict[int, list[FavoriteMealItemORM]] = {id: [] for id in favorite_ids}
+        if favorite_ids:
+            rows = self.session.scalars(
+                select(FavoriteMealItemORM)
+                .where(FavoriteMealItemORM.favorite_id.in_(favorite_ids))
+                .order_by(FavoriteMealItemORM.id)
+            )
+            for row in rows:
+                grouped[row.favorite_id].append(row)
+        return grouped
+
+    def create_favorite(self, user_id: int, request: FavoriteMealRequest) -> FavoriteMealORM:
+        favorite = FavoriteMealORM(user_id=user_id, name=request.name, meal_type=request.meal_type)
+        self.session.add(favorite)
+        self.session.flush()
+        return favorite
+
+    def update_favorite(self, favorite: FavoriteMealORM, request: FavoriteMealRequest) -> None:
+        favorite.name, favorite.meal_type = request.name, request.meal_type
+        self.session.flush()
+
+    def replace_favorite_items(self, favorite_id: int, items: list[MealItemRequest]) -> None:
+        self.session.execute(
+            delete(FavoriteMealItemORM).where(FavoriteMealItemORM.favorite_id == favorite_id)
+        )
+        self.session.add_all(
+            FavoriteMealItemORM(
+                favorite_id=favorite_id,
+                name=item.name,
+                calories=item.calories,
+                protein=item.protein,
+                carbs=item.carbs,
+                fat=item.fat,
+            )
+            for item in items
+        )
+        self.session.flush()
+
+    def delete_favorite(self, favorite: FavoriteMealORM) -> None:
+        self.session.execute(delete(FavoriteMealORM).where(FavoriteMealORM.id == favorite.id))

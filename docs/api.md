@@ -63,7 +63,7 @@ script compromise. Cookie-based frontend integrations must implement their own
 HttpOnly/Secure cookie and CSRF protections.
 
 Deletion requires password confirmation and atomically cascades profiles, meals
-and items, macro goals, workouts and items, personal records, all friendships
+and items, macro goals, favorite meals and items, workouts and items, personal records, all friendships
 involving the account, sessions/refresh hashes, recovery addresses and challenges.
 Unrelated users remain. There is no self-service undelete.
 
@@ -199,6 +199,28 @@ Days without meals return zeros. `targets` is `null` when none are configured
 `Invalid date`. Dates are compared as stored; the server never applies a timezone,
 so clients send the user's local date. Revision `0004_meal_dates` indexes
 `meals(user_id, date, id)` for both queries.
+
+## Favorite meals
+
+Favorites are reusable meal templates: a `name`, a default `meal_type`, and items
+with the same fields and validation as meal items (up to 500). They have no date or
+time. All routes are owner-scoped; another user's favorite returns 404.
+
+| Endpoint | Result |
+|---|---|
+| GET `/nutrition/favorites` | 200 page (`limit`/`offset`, ID order) |
+| POST `/nutrition/favorites` | 201 favorite with generated item IDs |
+| GET `/nutrition/favorites/{id}` | 200 favorite |
+| PUT `/nutrition/favorites/{id}` | 200 favorite; replaces `name`/`meal_type`; `items` omitted or null keeps them, a list (including `[]`) replaces them all with new IDs |
+| DELETE `/nutrition/favorites/{id}` | 204; items are deleted with it |
+| POST `/nutrition/favorites/{id}/log` | 201 `MealResponse` for a new meal |
+
+A favorite response always includes `items` (possibly `[]`) and a `total_calories`
+calculated from them. The log body takes `date` (required, `YYYY-MM-DD`), optional
+`time` (`HH:MM[:SS]`, default unknown) and optional `meal_type` (default: the
+favorite's). Logging copies the items into an ordinary meal; later edits or
+deletion of the favorite never change meals already logged. Favorites cascade on
+account deletion.
 
 ## Friend discovery
 

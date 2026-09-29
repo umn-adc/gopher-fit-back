@@ -3,6 +3,12 @@ from collections.abc import Sequence
 from app.core.errors import InvalidInput, NotFound
 from app.core.pagination import Page
 from app.features.nutrition.models import (
+    FavoriteMealItemORM,
+    FavoriteMealItemResponse,
+    FavoriteMealORM,
+    FavoriteMealRequest,
+    FavoriteMealResponse,
+    LogFavoriteRequest,
     MacroGoalsRequest,
     MacroGoalsResponse,
     MealItemORM,
@@ -11,6 +17,7 @@ from app.features.nutrition.models import (
     MealORM,
     MealRequest,
     MealResponse,
+    NestedMealItemRequest,
     NutritionSummaryResponse,
 )
 from app.features.nutrition.repository import NutritionRepository
@@ -127,3 +134,72 @@ class NutritionService:
     def update_macro_goals(self, user_id: int, request: MacroGoalsRequest) -> MacroGoalsResponse:
         self.repository.save_macro_goals(user_id, request)
         return MacroGoalsResponse(user_id=user_id, **request.model_dump())
+
+    def _owned_favorite(self, user_id: int, favorite_id: int) -> FavoriteMealORM:
+        favorite = self.repository.favorite(user_id, favorite_id)
+        if favorite is None:
+            raise NotFound("Favorite meal not found")
+        return favorite
+
+    def _favorite_response(
+        self, favorite: FavoriteMealORM, children: Sequence[FavoriteMealItemORM] | None = None
+    ) -> FavoriteMealResponse:
+        if children is None:
+            children = self.repository.favorite_items_for([favorite.id])[favorite.id]
+        items = [FavoriteMealItemResponse.model_validate(item) for item in children]
+        return FavoriteMealResponse(
+            id=favorite.id,
+            user_id=favorite.user_id,
+            name=favorite.name,
+            meal_type=favorite.meal_type,
+            total_calories=sum(item.calories for item in items),
+            items=items,
+        )
+
+    def favorites(self, user_id: int, page: Page) -> list[FavoriteMealResponse]:
+        favorites = self.repository.favorites(user_id, page)
+        children = self.repository.favorite_items_for([favorite.id for favorite in favorites])
+        return [self._favorite_response(favorite, children[favorite.id]) for favorite in favorites]
+
+    def favorite(self, user_id: int, favorite_id: int) -> FavoriteMealResponse:
+        return self._favorite_response(self._owned_favorite(user_id, favorite_id))
+
+    def create_favorite(self, user_id: int, request: FavoriteMealRequest) -> FavoriteMealResponse:
+        favorite = self.repository.create_favorite(user_id, request)
+        self.repository.replace_favorite_items(favorite.id, request.items or [])
+        return self._favorite_response(favorite)
+
+    def update_favorite(
+        self, user_id: int, favorite_id: int, request: FavoriteMealRequest
+    ) -> FavoriteMealResponse:
+        favorite = self._owned_favorite(user_id, favorite_id)
+        self.repository.update_favorite(favorite, request)
+        if request.items is not None:
+            self.repository.replace_favorite_items(favorite.id, request.items)
+        return self._favorite_response(favorite)
+
+    def delete_favorite(self, user_id: int, favorite_id: int) -> None:
+        self.repository.delete_favorite(self._owned_favorite(user_id, favorite_id))
+
+    def log_favorite(
+        self, user_id: int, favorite_id: int, request: LogFavoriteRequest
+    ) -> MealResponse:
+        """Create an ordinary meal from the template; later template edits don't change it."""
+        favorite = self._owned_favorite(user_id, favorite_id)
+        items = self.repository.favorite_items_for([favorite.id])[favorite.id]
+        meal = MealRequest(
+            date=request.date,
+            time=request.time,
+            meal_type=request.meal_type or favorite.meal_type,
+            items=[
+                NestedMealItemRequest(
+                    name=item.name,
+                    calories=item.calories,
+                    protein=item.protein,
+                    carbs=item.carbs,
+                    fat=item.fat,
+                )
+                for item in items
+            ],
+        )
+        return self.create_meal(user_id, meal)
