@@ -1,0 +1,14 @@
+# Example /etc/systemd/system/gopherfit-backup.timer. Enable with
+#   systemctl enable --now gopherfit-backup.timer
+# systemd never starts a second run while one is still active.
+[Unit]
+Description=Daily GopherFit backup
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+RandomizedDelaySec=15min
+# Run at the next boot if the machine was off at the scheduled time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

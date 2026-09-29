@@ -1,0 +1,44 @@
+# Example Caddyfile for the GopherFit API. Replace api.example.edu with the real
+# host. Caddy obtains and renews the TLS certificate itself and redirects HTTP to
+# HTTPS. Uvicorn listens only on 127.0.0.1:3000 (systemd/gopherfit.service).
+# The web frontend's recovery page needs its own headers; see the frontend README.
+api.example.edu {
+	# Reject bodies over 1 MiB before they reach the app.
+	request_body {
+		max_size 1MiB
+	}
+
+	# /metrics requires METRICS_TOKEN; don't expose it publicly either.
+	@metrics path /metrics
+	respond @metrics 404
+
+	reverse_proxy 127.0.0.1:3000 {
+		# With no trusted_proxies configured, Caddy discards client-supplied
+		# X-Forwarded-For/-Proto/-Host and sets them from the real connection.
+		# Uvicorn trusts forwarded headers only from 127.0.0.1
+		# (--forwarded-allow-ips), so per-IP rate limits see the real client.
+		# If Caddy itself sits behind a load balancer or CDN, list only that peer
+		# under the global `servers { trusted_proxies static ... }` option.
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 30s
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# Caddy redacts Authorization and cookie headers in access logs unless the
+	# global `log_credentials` option is on; keep it off. The API puts no
+	# secrets in query strings.
+	log {
+		output file /var/log/caddy/gopherfit-api.log {
+			roll_size 50MiB
+			roll_keep 10
+		}
+	}
+}

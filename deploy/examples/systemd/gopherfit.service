@@ -1,0 +1,44 @@
+# Example /etc/systemd/system/gopherfit.service. Adjust paths, user and workers.
+# Prepare with `uv sync --locked` and run `alembic upgrade head` separately
+# (see docs/migration.md): the app refuses to start on an old schema and never
+# migrates itself.
+[Unit]
+Description=GopherFit API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=gopher
+Group=gopher
+WorkingDirectory=/srv/gopher/app
+# JWT_SECRET, DATABASE_URL (absolute, e.g. sqlite:////srv/gopher/data/gopherfit.db),
+# SMTP_* and METRICS_TOKEN. Keep this file root-owned, mode 0640, group gopher.
+EnvironmentFile=/etc/gopherfit/gopherfit.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+# The virtualenv created by `uv sync --locked`; uv isn't needed at runtime.
+# Only the local proxy may set forwarded headers (see Caddyfile).
+ExecStart=/srv/gopher/app/.venv/bin/uvicorn app.main:create_app --factory \
+    --host 127.0.0.1 --port 3000 --workers 2 \
+    --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-access-log
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+
+# Hardening: the service can write only the SQLite directory (database and journal).
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/gopher/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

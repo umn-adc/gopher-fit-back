@@ -23,6 +23,34 @@ edge rate limiter against distributed abuse. Moving to multiple application
 hosts requires a deliberately designed shared database/rate-limit backend; that
 is not provided by this SQLite implementation.
 
+## Example configuration
+
+Examples only; adjust paths, hosts and users. None of them were applied to real
+infrastructure.
+
+- [systemd service](../deploy/examples/systemd/gopherfit.service): Uvicorn on
+  loopback with proxy headers trusted only from 127.0.0.1, plus sandboxing.
+- [Backup service](../deploy/examples/systemd/gopherfit-backup.service) and
+  [daily timer](../deploy/examples/systemd/gopherfit-backup.timer) running
+  `scripts.backup create`.
+- [Caddyfile](../deploy/examples/Caddyfile): automatic HTTPS, a 1 MiB body limit,
+  forwarded headers set only by Caddy, and `/metrics` hidden.
+- [SMTP provider checklist](../deploy/examples/smtp-provider-checklist.md) to
+  complete before enabling recovery.
+
+Rehearse an upgrade on a copy before touching the live database:
+
+```sh
+uv run python -m scripts.rehearse_migration /srv/gopher/data/gopherfit.db \
+  --workdir /srv/gopher/rehearsal-$(date +%Y%m%d)
+```
+
+It opens the source read-only, copies it with the SQLite backup API, snapshots the
+copy, upgrades the copy to head, and runs `alembic check`, `integrity_check` and
+`foreign_key_check`. It then prints row counts before and after, and exits non-zero
+on any failure. Stop writers first (or point it at a verified backup) so the copy
+is current.
+
 ## Configuration
 
 `.env` is loaded from the working directory; environment values override it.

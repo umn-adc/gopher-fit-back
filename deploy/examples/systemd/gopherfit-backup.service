@@ -1,0 +1,26 @@
+# Example /etc/systemd/system/gopherfit-backup.service, started by
+# gopherfit-backup.timer. Writes a verified snapshot with the SQLite backup API
+# and keeps the newest 14 for this database path (see docs/deployment.md).
+[Unit]
+Description=GopherFit SQLite backup snapshot
+
+[Service]
+Type=oneshot
+User=gopher
+Group=gopher
+WorkingDirectory=/srv/gopher/app
+EnvironmentFile=/etc/gopherfit/gopherfit.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/srv/gopher/app/.venv/bin/python -m scripts.backup create \
+    --directory /srv/gopher/backups --keep 14
+# Local snapshots aren't disaster recovery. Copy the newest one to encrypted
+# off-host storage here, e.g. an ExecStartPost= running your rclone/restic job,
+# and alert when that copy gets old.
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+# The source is opened read-only, but SQLite may need to recover a hot journal.
+ReadWritePaths=/srv/gopher/data /srv/gopher/backups
