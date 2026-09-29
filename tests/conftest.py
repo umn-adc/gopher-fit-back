@@ -36,7 +36,9 @@ def engine(tmp_path):
             )
             connection.exec_driver_sql(
                 """
-                INSERT INTO profiles VALUES (?, ?, 21, 170, 70, 'Other', 'Sedentary', 'null', '[]')
+                INSERT INTO profiles(
+                    user_id, name, age, height, weight, gender, activity_level, goals, sports
+                ) VALUES (?, ?, 21, 170, 70, 'Other', 'Sedentary', 'null', '[]')
             """,
                 (user_id, f"Private Name {user_id}"),
             )

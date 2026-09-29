@@ -62,7 +62,9 @@ uv run python -m scripts.export_openapi
 Read [migrations](docs/migration.md) and [deployment](docs/deployment.md). Keep
 other writers stopped during migration. `0002_backend_lifecycle` adds nullable
 workout timestamps, authentication/recovery/rate-limit tables, and indexes. It
-preserves existing rows and leaves historical workout times unknown. Startup
+preserves existing rows and leaves historical workout times unknown. `0003_units`
+adds nullable weight-unit, overall-minutes and unit-preference columns, leaving
+historical units unknown and rebuilding the derived personal records empty. Startup
 requires the current migration head; it never applies migrations automatically.
 
 Create a consistent backup and rehearse restoring to a new file:

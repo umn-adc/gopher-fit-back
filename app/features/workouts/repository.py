@@ -73,6 +73,7 @@ class WorkoutRepository:
             user_id=user_id,
             workout_name=request.workout_name,
             duration=request.duration,
+            duration_minutes=request.duration_minutes,
             occurred_at=timestamp_text(request.occurred_at) if request.occurred_at else None,
         )
         self.session.add(workout)
@@ -80,7 +81,13 @@ class WorkoutRepository:
         return workout
 
     def update_workout(self, workout: WorkoutORM, request: WorkoutRequest) -> None:
-        workout.workout_name, workout.duration = request.workout_name, request.duration
+        workout.workout_name = request.workout_name
+        # Omitted optional fields keep stored values, so clients that write only
+        # duration_minutes never erase a legacy duration.
+        if "duration" in request.model_fields_set:
+            workout.duration = request.duration
+        if "duration_minutes" in request.model_fields_set:
+            workout.duration_minutes = request.duration_minutes
         if "occurred_at" in request.model_fields_set:
             workout.occurred_at = (
                 timestamp_text(request.occurred_at) if request.occurred_at else None
@@ -98,6 +105,7 @@ class WorkoutRepository:
             reps=request.reps,
             weight=request.weight,
             duration_minutes=request.duration_minutes,
+            weight_unit=request.weight_unit,
         )
         self.session.add(item)
         self.session.flush()
@@ -106,7 +114,7 @@ class WorkoutRepository:
     def update_item(self, item: WorkoutItemORM, request: WorkoutItemRequest) -> None:
         item.exercise_name = request.exercise_name
         item.sets, item.reps, item.weight = request.sets, request.reps, request.weight
-        item.duration_minutes = request.duration_minutes
+        item.duration_minutes, item.weight_unit = request.duration_minutes, request.weight_unit
         self.session.flush()
 
     def delete_item(self, item: WorkoutItemORM) -> None:
@@ -117,7 +125,11 @@ class WorkoutRepository:
         return self.session.scalars(
             select(WorkoutItemORM)
             .join(WorkoutORM)
-            .where(WorkoutORM.user_id == user_id, WorkoutItemORM.weight > 0)
+            .where(
+                WorkoutORM.user_id == user_id,
+                WorkoutItemORM.weight > 0,
+                WorkoutItemORM.weight_unit.is_not(None),
+            )
         ).all()
 
     def save_record(self, user_id: int, key: str, name: str, weight: float, source_id: int) -> None:

@@ -106,6 +106,7 @@ Create, parent update, nested update, and item endpoints share input constraints
   `name`/`exercise_name`) are nonblank, maximum 200 characters. Registration now
   requires a profile name; profile PUT is still a full profile replacement.
 - Nutrition/macros, sets/reps, weights, all durations are finite and nonnegative.
+  Positive item weights require `weight_unit` (see Units).
   Integer fields reject booleans, fractional/string numbers and signed-64-bit overflow.
 - Meal `date` is a real `YYYY-MM-DD` date; `time` is an optional local wall time
   `HH:MM` or `HH:MM:SS`, with `""` meaning unknown. Meal dates/times do not infer
@@ -147,9 +148,31 @@ are still omitted from meal/workout responses. Dedicated child PUT routes retain
 their path-ID semantics (body IDs are ignored).
 
 Workout record maintenance uses normalized exercise names, the highest positive
-weight, and lowest item ID to break ties. Rename, replacement, and deletion
-recompute affected records, including fallback candidates in other workouts.
-Zero-weight items remain stored but do not rank. No unit conversion is applied.
+weight in kilograms, and lowest item ID to break ties. Rename, unit changes,
+replacement, and deletion recompute affected records, including fallback candidates
+in other workouts. Zero-weight items remain stored but do not rank.
+
+## Units
+
+- Workout items have `weight_unit`: `"kg"`, `"lb"`, or `null` (unknown). It is
+  required whenever `weight` is positive, on every create, child update and nested
+  replacement; otherwise 400 `weight_unit (kg or lb) is required when weight is
+  positive`. Weightless items may omit it. Items logged before revision 0003 keep
+  `null`; the API never guesses. Users fix old items by editing them with a unit.
+- Personal records, `GET /social/leaderboard` and `GET /social/muscle-ranks` compare
+  kilograms (1 lb = 0.45359237 kg). `max_weight` is always **kilograms**. Items with
+  an unknown unit never rank, so rankings start empty after the upgrade and fill as
+  users log or edit items with units.
+- Workouts have `duration_minutes`, the overall minutes (nonnegative number, `null`
+  unknown). POST omission means unknown; on PUT, omission preserves the stored
+  value and `null` clears it. The legacy integer `duration` has no defined unit and
+  is **deprecated**: it is still returned and accepted, but new clients should write
+  only `duration_minutes`. On PUT an omitted `duration` now preserves the stored
+  value (it previously reset to 0), so clients that stop sending it keep old data.
+- Profiles have `unit_preference`: `"metric"` (default) or `"imperial"`. It is a
+  display preference only; profile height/weight remain whole cm/kg. Profiles
+  created before revision 0003 read as `"metric"`. Profile PUT remains a full
+  replacement, so omitting it restores `"metric"`.
 
 ## Workout history and pagination
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 from app.core.schemas import RequestSchema, Schema
 from app.core.validation import Name, NonnegativeFloat, NonnegativeInt, Timestamp
+from app.features.workouts.units import WeightUnit
 
 
 class WorkoutORM(Base):
@@ -22,6 +23,7 @@ class WorkoutORM(Base):
     workout_name: Mapped[str | None] = mapped_column(Text)
     duration: Mapped[int | None]
     occurred_at: Mapped[str | None] = mapped_column(Text)
+    duration_minutes: Mapped[float | None] = mapped_column(REAL)
 
 
 class WorkoutItemORM(Base):
@@ -38,6 +40,10 @@ class WorkoutItemORM(Base):
     reps: Mapped[int | None]
     weight: Mapped[float | None] = mapped_column(REAL)
     duration_minutes: Mapped[float | None] = mapped_column(REAL)
+    # NULL means the unit is unknown (all rows logged before revision 0003).
+    weight_unit: Mapped[str | None] = mapped_column(
+        Text, CheckConstraint("weight_unit IN ('kg', 'lb')", name="workout_item_weight_unit")
+    )
 
 
 class PersonalRecordORM(Base):
@@ -72,6 +78,9 @@ class WorkoutItemRequest(RequestSchema):
     reps: NonnegativeInt = 0
     weight: NonnegativeFloat = 0
     duration_minutes: NonnegativeFloat = 0
+    weight_unit: WeightUnit | None = Field(
+        default=None, description="Required when weight is positive"
+    )
 
 
 class NestedWorkoutItemRequest(WorkoutItemRequest):
@@ -87,11 +96,23 @@ class WorkoutItemResponse(Schema):
     reps: int = 0
     weight: float = 0
     duration_minutes: float = 0
+    weight_unit: WeightUnit | None = Field(default=None, description="null means unknown")
+
+
+LEGACY_DURATION = "Deprecated: legacy overall duration with no defined unit. Use duration_minutes."
 
 
 class WorkoutRequest(RequestSchema):
     workout_name: Name
-    duration: NonnegativeInt = 0
+    duration: NonnegativeInt = Field(
+        default=0,
+        description=LEGACY_DURATION + " Omitted on PUT preserves the stored value.",
+        json_schema_extra={"deprecated": True},
+    )
+    duration_minutes: NonnegativeFloat | None = Field(
+        default=None,
+        description="Overall minutes; null means unknown; omitted on PUT preserves",
+    )
     occurred_at: Timestamp | None = Field(
         default=None,
         description="ISO 8601 with offset; null means unknown; omitted on PUT preserves",
@@ -103,7 +124,8 @@ class WorkoutResponse(Schema):
     id: int
     user_id: int
     workout_name: str
-    duration: int
+    duration: int = Field(description=LEGACY_DURATION, json_schema_extra={"deprecated": True})
+    duration_minutes: float | None = None
     occurred_at: datetime | None = None
     # Empty collections are omitted from responses, as the Go API did.
     items: list[WorkoutItemResponse] = Field(

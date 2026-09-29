@@ -144,3 +144,24 @@ Schema compatibility does not imply API compatibility: the archived Go compariso
 script describes the initial Python baseline. Revision 0002 deliberately changes
 JWT acceptance, validation, nested writes, pagination, and workout ordering; see
 [API changes](api.md). Do not use the old Go service as a writer on an upgraded DB.
+
+## Revision 0003: units
+
+`0003_units` follows `0002_backend_lifecycle` and adds three nullable columns:
+
+- `workout_item.weight_unit TEXT NULL`, checked to `'kg'` or `'lb'`. Existing items
+  keep NULL, meaning the unit is unknown. No unit is inferred from weights, names,
+  profiles or other rows.
+- `workouts.duration_minutes REAL NULL`. Existing workouts keep NULL (unknown); the
+  legacy `duration` values are preserved and not converted.
+- `profiles.unit_preference TEXT NULL`, checked to `'metric'` or `'imperial'`.
+  NULL reads as metric in the API; no value is written to existing rows.
+
+`personal_records` is derived. Records now hold kilograms from items with a known
+unit, and immediately after the new column exists no item has one, so the revision
+deletes the projection's rows. Workout rows, items and weights are untouched.
+Rankings refill as users log or edit items with units. The downgrade refuses, like
+the earlier ones; restore a verified backup instead. Tests upgrade populated legacy
+Go and 0002 databases and check preservation, NULL defaults, CHECK constraints,
+foreign keys and `alembic check`.
+

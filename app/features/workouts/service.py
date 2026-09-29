@@ -15,11 +15,14 @@ from app.features.workouts.models import (
     WorkoutResponse,
 )
 from app.features.workouts.repository import WorkoutRepository
+from app.features.workouts.units import kilograms
 
 
 def validate_item(item: WorkoutItemRequest) -> None:
     if not exercise_key(item.exercise_name) or item.weight < 0 or not math.isfinite(item.weight):
         raise InvalidInput("Exercise name is required and weight must be finite and nonnegative")
+    if item.weight > 0 and item.weight_unit is None:
+        raise InvalidInput("weight_unit (kg or lb) is required when weight is positive")
 
 
 class WorkoutService:
@@ -47,6 +50,7 @@ class WorkoutService:
             user_id=workout.user_id,
             workout_name=workout.workout_name or "",
             duration=workout.duration or 0,
+            duration_minutes=workout.duration_minutes,
             occurred_at=datetime.fromisoformat(workout.occurred_at)
             if workout.occurred_at
             else None,
@@ -54,6 +58,7 @@ class WorkoutService:
         )
 
     def refresh_records(self, user_id: int, names: list[str]) -> None:
+        # Records hold kilograms. Items with an unknown unit never rank.
         keys = {exercise_key(name) for name in names} - {""}
         if not keys:
             return
@@ -61,7 +66,7 @@ class WorkoutService:
         for item in self.repository.record_candidates(user_id):
             name = display_name(item.exercise_name or "")
             key = exercise_key(name)
-            weight = item.weight
+            weight = kilograms(item.weight, item.weight_unit)
             if key not in keys or weight is None or weight <= 0 or not math.isfinite(weight):
                 continue
             candidate = (weight, -item.id, name)

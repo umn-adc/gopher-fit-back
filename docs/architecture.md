@@ -26,7 +26,8 @@ business rules, and HTTP routes. ORM classes end in `ORM`; API schemas end in
 
 Authentication helpers belong to `auth`. `auth/dependencies.py` exposes the
 current user dependency to other routers. `auth/security.py` owns JWT and bcrypt
-behavior. `workouts/exercises.py` owns exercise normalization shared with rankings.
+behavior. `workouts/exercises.py` owns exercise normalization shared with rankings, and
+`workouts/units.py` converts known weight units to the kilograms records compare.
 Nutrition reuses its Unicode whitespace helper to preserve the Go definition of
 a blank name. These modules do not perform persistence or HTTP work.
 
@@ -52,8 +53,9 @@ writer and avoids upgrading an old read snapshot into a write transaction.
 Transactions should stay short: no network calls or background work inside them.
 
 Workout creation/deletion, child changes, and recalculation of affected personal
-records run together. The service selects the highest positive finite lift per
-normalized exercise, breaking ties by lowest item ID. The repository persists
+records run together. The service selects the highest positive finite lift in
+kilograms per normalized exercise, skipping items with an unknown unit and breaking
+ties by lowest item ID. The repository persists
 the selected records. Friendship updates/deletes additionally match the previous
 actor and status, so a stale state cannot overwrite a block.
 

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import ConfigDict, Field
 from sqlalchemy import CheckConstraint, ForeignKey, Text
@@ -16,6 +16,7 @@ ACTIVITY_LEVELS = (
     "Very Active",
     "Extra Active",
 )
+UnitPreference = Literal["metric", "imperial"]
 
 
 class ProfileORM(Base):
@@ -39,6 +40,13 @@ class ProfileORM(Base):
     activity_level: Mapped[str | None] = mapped_column(Text)
     goals: Mapped[str | None] = mapped_column(Text)
     sports: Mapped[str | None] = mapped_column(Text)
+    # NULL (every profile created before revision 0003) reads as metric.
+    unit_preference: Mapped[str | None] = mapped_column(
+        Text,
+        CheckConstraint(
+            "unit_preference IN ('metric', 'imperial')", name="profiles_unit_preference"
+        ),
+    )
 
 
 def document_profile_choices(schema: dict[str, Any]) -> None:
@@ -61,6 +69,9 @@ class ProfileRequest(RequestSchema):
     activity_level: str = ""
     goals: list[str] | None = None
     sports: list[str] | None = None
+    unit_preference: UnitPreference = Field(
+        default="metric", description="Display units; stored values stay kg and cm"
+    )
 
 
 class ProfileResponse(Schema):
@@ -73,6 +84,7 @@ class ProfileResponse(Schema):
     activity_level: str
     goals: list[str] | None
     sports: list[str] | None
+    unit_preference: UnitPreference
 
 
 class PublicProfileResponse(Schema):

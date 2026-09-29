@@ -8,7 +8,9 @@ def create_workout(client, weights, name=" Bench\u00a0 Press ", headers=None):
         json={
             "workout_name": "Strength",
             "duration": 60,
-            "items": [{"exercise_name": name, "weight": weight} for weight in weights],
+            "items": [
+                {"exercise_name": name, "weight": weight, "weight_unit": "kg"} for weight in weights
+            ],
         },
     )
     assert response.status_code == 201, response.text
@@ -40,7 +42,8 @@ def test_records_follow_full_lifecycle(authed):
     assert records(authed)[0]["source_workout_item_id"] == first["items"][2]["id"]
     # Rename must recompute both exercise keys.
     response = authed.put(
-        prefix + str(first["items"][2]["id"]), json={"exercise_name": "Squat", "weight": 200}
+        prefix + str(first["items"][2]["id"]),
+        json={"exercise_name": "Squat", "weight": 200, "weight_unit": "kg"},
     )
     assert response.status_code == 204 and response.content == b""
     assert [(r["exercise_key"], r["max_weight"]) for r in records(authed)] == [
@@ -50,7 +53,8 @@ def test_records_follow_full_lifecycle(authed):
     assert authed.delete(f"/workouts/{second['id']}").status_code == 204
     assert records(authed)[0]["max_weight"] == 100
     added = authed.post(
-        f"/workouts/{first['id']}/items", json={"exercise_name": "Bench Press", "weight": 175}
+        f"/workouts/{first['id']}/items",
+        json={"exercise_name": "Bench Press", "weight": 175, "weight_unit": "kg"},
     ).json()
     assert records(authed)[0]["source_workout_item_id"] == added["id"]
     assert authed.delete(f"/workouts/{first['id']}").status_code == 204
@@ -104,14 +108,20 @@ def test_record_failure_rolls_back_workout_mutation(authed, engine, operation):
     if operation == "create":
         response = authed.post(
             "/workouts/",
-            json={"workout_name": "Strength", "items": [{"exercise_name": "Squat", "weight": 200}]},
+            json={
+                "workout_name": "Strength",
+                "items": [{"exercise_name": "Squat", "weight": 200, "weight_unit": "kg"}],
+            },
         )
     elif operation == "add":
         response = authed.post(
-            path + "/items", json={"exercise_name": "Bench Press", "weight": 200}
+            path + "/items",
+            json={"exercise_name": "Bench Press", "weight": 200, "weight_unit": "kg"},
         )
     elif operation == "edit":
-        response = authed.put(item_path, json={"exercise_name": "Squat", "weight": 200})
+        response = authed.put(
+            item_path, json={"exercise_name": "Squat", "weight": 200, "weight_unit": "kg"}
+        )
     elif operation == "delete_item":
         response = authed.delete(item_path)
     else:
@@ -133,8 +143,8 @@ def test_child_failure_rolls_back_entire_creation(authed, engine):
         json={
             "workout_name": "Strength",
             "items": [
-                {"exercise_name": "Bench", "weight": 100},
-                {"exercise_name": "fail", "weight": 20},
+                {"exercise_name": "Bench", "weight": 100, "weight_unit": "kg"},
+                {"exercise_name": "fail", "weight": 20, "weight_unit": "kg"},
             ],
         },
     )
@@ -148,7 +158,11 @@ def test_workout_item_parent_and_owner(authed, headers, method):
     first = create_workout(authed, [100])
     second = create_workout(authed, [])
     item = first["items"][0]["id"]
-    kwargs = {"json": {"exercise_name": "Squat", "weight": 200}} if method == "put" else {}
+    kwargs = (
+        {"json": {"exercise_name": "Squat", "weight": 200, "weight_unit": "kg"}}
+        if method == "put"
+        else {}
+    )
     assert (
         getattr(authed, method)(
             f"/workouts/{first['id']}/items/{item}", headers=headers(2), **kwargs

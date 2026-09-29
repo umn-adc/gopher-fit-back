@@ -13,6 +13,18 @@ from app.main import create_app
 from tests.conftest import HASH, PASSWORD, SECRET, migrate
 
 SCHEMA = Path("migrations/versions/initial_schema.sql").read_text()
+# Go-era columns; later revisions only add nullable columns to these tables.
+LEGACY_COLUMNS = {
+    "workouts": "id,user_id,workout_name,duration",
+    "workout_item": "id,workout_id,exercise_name,sets,reps,weight,duration_minutes",
+    "profiles": "user_id,name,age,height,weight,gender,activity_level,goals,sports",
+}
+
+
+def upgrade(path, revision):
+    config = Config("alembic.ini")
+    config.attributes["database_url"] = f"sqlite:///{path}"
+    command.upgrade(config, revision)
 
 
 def snapshot(connection):
@@ -25,8 +37,7 @@ def snapshot(connection):
     ]
     return {
         table: connection.execute(
-            f"SELECT {'id,user_id,workout_name,duration' if table == 'workouts' else '*'} "
-            f'FROM "{table}" ORDER BY rowid'
+            f'SELECT {LEGACY_COLUMNS.get(table, "*")} FROM "{table}" ORDER BY rowid'
         ).fetchall()
         for table in tables
     }
@@ -81,14 +92,18 @@ def test_adoption_preserves_all_rows_hashes_relations_and_sequences(
 ):
     path = tmp_path / "legacy.db"
     before = legacy_database(path, text_password, ledger)
+    upgrade(path, "0002_backend_lifecycle")
+    with sqlite3.connect(path) as connection:
+        assert snapshot(connection)["personal_records"] == [
+            (7, "bench press", "BENCH PRESS", 125.5, 2),
+            (7, "squat", "Squat", 200.0, 4),
+        ]
     migrate(path)
     with sqlite3.connect(path) as connection:
         after = snapshot(connection)
         assert {table: after[table] for table in before} == before
-        assert after["personal_records"] == [
-            (7, "bench press", "BENCH PRESS", 125.5, 2),
-            (7, "squat", "Squat", 200.0, 4),
-        ]
+        # 0003: historical lifts have no known unit, so the derived records are rebuilt empty.
+        assert after["personal_records"] == []
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         stored = connection.execute("SELECT password FROM users WHERE id=7").fetchone()[0]
         assert bcrypt.checkpw(
@@ -108,7 +123,7 @@ def test_adoption_preserves_all_rows_hashes_relations_and_sequences(
         client.headers["Authorization"] = "Bearer " + response.json()["token"]
         assert client.get("/profile/").json()["name"] == "Preserved"
         assert client.get("/nutrition/meals").json()[0]["items"][0]["name"] == "Rice"
-        assert client.get("/social/muscle-ranks").json()[0]["max_weight"] == 125.5
+        assert client.get("/social/muscle-ranks").json() == []
 
 
 def test_existing_version_three_records_and_schema_are_untouched(tmp_path):
@@ -131,7 +146,7 @@ def test_existing_version_three_records_and_schema_are_untouched(tmp_path):
         ddl = connection.execute(
             "SELECT name, sql FROM sqlite_master WHERE type='table' AND name != 'workouts'"
         ).fetchall()
-    migrate(path)
+    upgrade(path, "0002_backend_lifecycle")
     with sqlite3.connect(path) as connection:
         after = snapshot(connection)
         assert {table: after[table] for table in before} == before
@@ -144,6 +159,14 @@ def test_existing_version_three_records_and_schema_are_untouched(tmp_path):
             ).fetchall()
             == ddl
         )
+    migrate(path)
+    with sqlite3.connect(path) as connection:
+        after = snapshot(connection)
+        # 0003 rebuilds only the derived records; every other row is unchanged.
+        assert after["personal_records"] == []
+        assert {t: after[t] for t in before if t != "personal_records"} == {
+            t: rows for t, rows in before.items() if t != "personal_records"
+        }
 
 
 def test_invalid_history_rolls_back_and_can_retry(tmp_path):
@@ -232,7 +255,7 @@ def test_ddl_failure_leaves_no_partial_schema_and_can_retry(tmp_path):
         assert "personal_records" not in after
         assert {table: after[table] for table in before} == before
         connection.execute("DROP TABLE personal_records_exercise_weight")
-    migrate(path)
+    upgrade(path, "0002_backend_lifecycle")
     with sqlite3.connect(path) as connection:
         assert connection.execute("SELECT count(*) FROM personal_records").fetchone() == (2,)
 
@@ -275,9 +298,16 @@ def test_additive_revision_preserves_0001_data_and_rolls_back_ddl_failure(tmp_pa
             "SELECT name FROM sqlite_master WHERE name='auth_sessions'"
         ).fetchall()
         connection.execute("DROP TABLE auth_sessions_user")
-    command.upgrade(config, "head")
+    command.upgrade(config, "0002_backend_lifecycle")
     with sqlite3.connect(path) as connection:
         after = snapshot(connection)
         assert {name: after[name] for name in before} == before
         assert connection.execute("SELECT occurred_at FROM workouts").fetchall() == [(None,)]
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    command.upgrade(config, "head")
+    with sqlite3.connect(path) as connection:
+        after = snapshot(connection)
+        assert after["personal_records"] == []
+        assert {name: after[name] for name in before if name != "personal_records"} == {
+            name: rows for name, rows in before.items() if name != "personal_records"
+        }

@@ -575,6 +575,22 @@
             "title": "Weight",
             "type": "number"
           },
+          "weight_unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "kg",
+                  "lb"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required when weight is positive",
+            "title": "Weight Unit"
+          },
           "workout_id": {
             "default": 0,
             "minimum": 0.0,
@@ -706,6 +722,16 @@
             ],
             "title": "Sports"
           },
+          "unit_preference": {
+            "default": "metric",
+            "description": "Display units; stored values stay kg and cm",
+            "enum": [
+              "metric",
+              "imperial"
+            ],
+            "title": "Unit Preference",
+            "type": "string"
+          },
           "weight": {
             "default": 0,
             "maximum": 700.0,
@@ -772,6 +798,14 @@
             ],
             "title": "Sports"
           },
+          "unit_preference": {
+            "enum": [
+              "metric",
+              "imperial"
+            ],
+            "title": "Unit Preference",
+            "type": "string"
+          },
           "user_id": {
             "title": "User Id",
             "type": "integer"
@@ -790,7 +824,8 @@
           "gender",
           "activity_level",
           "goals",
-          "sports"
+          "sports",
+          "unit_preference"
         ],
         "title": "ProfileResponse",
         "type": "object"
@@ -953,6 +988,16 @@
             ],
             "title": "Sports"
           },
+          "unit_preference": {
+            "default": "metric",
+            "description": "Display units; stored values stay kg and cm",
+            "enum": [
+              "metric",
+              "imperial"
+            ],
+            "title": "Unit Preference",
+            "type": "string"
+          },
           "username": {
             "maxLength": 200,
             "minLength": 1,
@@ -1059,6 +1104,22 @@
             "minimum": 0.0,
             "title": "Weight",
             "type": "number"
+          },
+          "weight_unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "kg",
+                  "lb"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required when weight is positive",
+            "title": "Weight Unit"
           }
         },
         "required": [
@@ -1097,6 +1158,22 @@
             "title": "Weight",
             "type": "number"
           },
+          "weight_unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "kg",
+                  "lb"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null means unknown",
+            "title": "Weight Unit"
+          },
           "workout_id": {
             "title": "Workout Id",
             "type": "integer"
@@ -1109,7 +1186,8 @@
           "sets",
           "reps",
           "weight",
-          "duration_minutes"
+          "duration_minutes",
+          "weight_unit"
         ],
         "title": "WorkoutItemResponse",
         "type": "object"
@@ -1118,10 +1196,25 @@
         "properties": {
           "duration": {
             "default": 0,
+            "deprecated": true,
+            "description": "Deprecated: legacy overall duration with no defined unit. Use duration_minutes. Omitted on PUT preserves the stored value.",
             "maximum": 9.223372036854776e+18,
             "minimum": 0.0,
             "title": "Duration",
             "type": "integer"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Overall minutes; null means unknown; omitted on PUT preserves",
+            "title": "Duration Minutes"
           },
           "items": {
             "anyOf": [
@@ -1167,8 +1260,21 @@
       "WorkoutResponse": {
         "properties": {
           "duration": {
+            "deprecated": true,
+            "description": "Deprecated: legacy overall duration with no defined unit. Use duration_minutes.",
             "title": "Duration",
             "type": "integer"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
           },
           "id": {
             "title": "Id",
@@ -1207,6 +1313,7 @@
           "user_id",
           "workout_name",
           "duration",
+          "duration_minutes",
           "occurred_at"
         ],
         "title": "WorkoutResponse",

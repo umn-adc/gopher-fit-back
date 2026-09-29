@@ -39,7 +39,12 @@ def test_meal_nested_creation_total_and_late_child_rollback(authed, engine):
     "path,parent,child,foreign_key",
     [
         ("/nutrition/meals", MEAL, {"name": "Rice"}, "meal_id"),
-        ("/workouts/", WORKOUT, {"exercise_name": "Bench", "weight": 100}, "workout_id"),
+        (
+            "/workouts/",
+            WORKOUT,
+            {"exercise_name": "Bench", "weight": 100, "weight_unit": "kg"},
+            "workout_id",
+        ),
     ],
 )
 def test_nested_replacement_omission_empty_and_child_ownership(
@@ -74,7 +79,9 @@ def test_nested_workout_updates_recalculate_records_and_rollback(authed, engine)
     first = create_workout(authed, [100, 150, 150])
     fallback = create_workout(authed, [125])
     target = f"/workouts/{first['id']}"
-    replacement = [{**first["items"][0], "exercise_name": "Squat", "weight": 200}]
+    replacement = [
+        {**first["items"][0], "exercise_name": "Squat", "weight": 200, "weight_unit": "kg"}
+    ]
     assert authed.put(target, json={**WORKOUT, "items": replacement}).status_code == 200
     assert [(r["exercise_key"], r["max_weight"]) for r in records(authed)] == [
         ("bench press", 125),
@@ -90,7 +97,7 @@ def test_nested_workout_updates_recalculate_records_and_rollback(authed, engine)
             target,
             json={
                 "workout_name": "Changed",
-                "items": [{"exercise_name": "Deadlift", "weight": 250}],
+                "items": [{"exercise_name": "Deadlift", "weight": 250, "weight_unit": "kg"}],
             },
         ).status_code
         == 500
@@ -308,7 +315,9 @@ def test_large_collections_are_bounded_by_default(authed, engine):
                 (i, i),
             )
             connection.exec_driver_sql(
-                "INSERT INTO workout_item VALUES(?,?,'Bench',1,1,100,0)", (i, i)
+                "INSERT INTO workout_item(id,workout_id,exercise_name,sets,reps,weight,"
+                "duration_minutes) VALUES(?,?,'Bench',1,1,100,0)",
+                (i, i),
             )
             connection.exec_driver_sql(
                 "INSERT INTO personal_records VALUES(?,'bench','Bench',100,?)", (i, i)

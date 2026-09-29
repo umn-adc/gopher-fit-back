@@ -217,7 +217,7 @@ def test_nutrition_responses_match_contract(call, headers):
 def test_workout_and_social_responses_match_contract(call, headers):
     token = headers(1)["Authorization"].split()[1]
     friend = headers(2)["Authorization"].split()[1]
-    lift = {"exercise_name": "Bench", "sets": 3, "reps": 5, "weight": 100.5}
+    lift = {"exercise_name": "Bench", "sets": 3, "reps": 5, "weight": 100.5, "weight_unit": "lb"}
     workout = call(
         "POST",
         "/workouts/",

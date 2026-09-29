@@ -1,5 +1,6 @@
 import json
 import time
+from typing import cast
 
 from app.core.errors import AuthenticationFailed, InvalidInput, NotFound, StorageFailure
 from app.features.auth.repository import AuthRepository
@@ -12,6 +13,7 @@ from app.features.profile.models import (
     ProfileRequest,
     ProfileResponse,
     PublicProfileResponse,
+    UnitPreference,
     UsernameResponse,
 )
 from app.features.profile.repository import ProfileRepository
@@ -46,6 +48,8 @@ class ProfileService:
                 activity_level=profile.activity_level or "",
                 goals=json.loads(profile.goals) if profile.goals else None,
                 sports=json.loads(profile.sports) if profile.sports else None,
+                # Pydantic still validates the stored value against the literal.
+                unit_preference=cast(UnitPreference, profile.unit_preference or "metric"),
             )
         except ValueError as error:
             raise StorageFailure("Failed to decode profile") from error
