@@ -1,7 +1,7 @@
 # Gopher Fit Backend
 
-Python 3.13, FastAPI, Pydantic 2, SQLAlchemy 2, and SQLite. The uncommitted
-Go-to-Python migration is retained, with the original Go source at `legacy/go/`.
+Python 3.13, FastAPI, Pydantic 2, SQLAlchemy 2, and SQLite. The backend was
+migrated from Go to Python; the original Go source remains at `legacy/go/`.
 Feature code keeps the router → service → repository boundaries.
 
 ## Setup
