@@ -76,3 +76,27 @@ On 2026-09-25, `uv sync --locked` and `make check` completed successfully:
 An intermediate new pagination stress-test fixture collided its own explicit and
 SQLite-generated workout IDs; the fixture was corrected to use disjoint ID ranges.
 The final full run above passed without skips or xfails.
+
+## Next-steps backend milestones (2026-09-29)
+
+Milestones 2a–2f (OpenAPI accuracy, units, meals by date, weekly target, username
+search, favorite meals) were checked after each commit. Final results on `a6ccb88`:
+
+- `make check`: Ruff lint and format passed (77 files), strict mypy found no issues
+  in 50 source files, **pytest 323 passed**, OpenAPI snapshot comparison passed.
+- `uv run alembic check` against a temporary database upgraded to
+  `0006_favorite_meals`: no new upgrade operations detected. Every revision was
+  also upgraded from populated legacy Go and 0002 databases in tests.
+- `tests/test_openapi_responses.py` validates real responses from the main endpoints
+  against the generated document, failing on undocumented keys or statuses.
+- The frontend integration suite (`tests/live-api.cjs`) was run against this backend
+  before the frontend update: profile/nutrition passed, and the workout section
+  failed with `weight_unit (kg or lb) is required when weight is positive`, as D1
+  requires. The frontend and backend must be deployed together.
+
+Two full runs during this work each had one unrelated test fail with an unexpected
+401. Neither reproduced in 8+ reruns. The host (WSL2) wall clock was measured
+stepping back 1.7 seconds within a minute; PyJWT rejects an access token whose
+`iat` is later than the current time, so a token minted just before such a step is
+briefly rejected. Authentication code was not changed for this; rerun on a host
+with a monotonic wall clock if it recurs.
