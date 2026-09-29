@@ -25,6 +25,8 @@ class OperationsService:
             group, limit = "recovery", self.settings.recovery_rate_limit
         elif path.startswith("/auth/") or path == "/profile/password":
             group, limit = "auth", self.settings.auth_rate_limit
+        elif path == "/social/users/search":
+            group, limit = "search", self.settings.search_rate_limit
         else:
             return None
         # Hash IPs with a secret; do not persist plaintext network identities.

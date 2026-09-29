@@ -1,18 +1,20 @@
 from collections.abc import Sequence
 from typing import Literal
 
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import Conflict
 from app.core.pagination import DEFAULT_PAGE, Page
 from app.features.auth.models import UserORM
+from app.features.profile.models import ProfileORM
 from app.features.social.models import (
     FriendshipORM,
     FriendshipResponse,
     LeaderboardResponse,
     MuscleRankResponse,
+    UserSearchResponse,
 )
 from app.features.workouts.models import PersonalRecordORM
 
@@ -30,6 +32,32 @@ class SocialRepository:
             )
             == 2
         )
+
+    def search_users(self, user_id: int, prefix: str, limit: int) -> list[UserSearchResponse]:
+        escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        # Friendship pairs are stored ordered, so match the caller on either side.
+        blocked = select(FriendshipORM.user1_id).where(
+            FriendshipORM.status == "blocked",
+            or_(
+                and_(FriendshipORM.user1_id == user_id, FriendshipORM.user2_id == UserORM.id),
+                and_(FriendshipORM.user2_id == user_id, FriendshipORM.user1_id == UserORM.id),
+            ),
+        )
+        query = (
+            select(UserORM.id, UserORM.username, ProfileORM.name)
+            .outerjoin(ProfileORM, ProfileORM.user_id == UserORM.id)
+            .where(
+                UserORM.id != user_id,
+                # SQLite LIKE ignores case for ASCII letters only.
+                UserORM.username.like(escaped + "%", escape="\\"),
+                ~blocked.exists(),
+            )
+            .order_by(UserORM.username.collate("NOCASE"), UserORM.id)
+            .limit(limit)
+        )
+        return [
+            UserSearchResponse.model_validate(row) for row in self.session.execute(query).mappings()
+        ]
 
     def friendships(
         self, user_id: int, collection: Collection, page: Page = DEFAULT_PAGE

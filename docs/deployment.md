@@ -43,7 +43,8 @@ Keep secrets outside version control. `.env.example` contains all settings.
 | `SMTP_TIMEOUT_SECONDS` | 10 | Socket timeout, up to 60 seconds |
 | `AUTH_RATE_LIMIT` | 20 | Requests per client IP per window, shared across `/auth/*` except recovery and `/profile/password` |
 | `RECOVERY_RATE_LIMIT` | 5 | Separate IP bucket across all `/auth/recovery*` operations |
-| `RATE_LIMIT_WINDOW_SECONDS` | 60 | Fixed-window duration for both buckets |
+| `SEARCH_RATE_LIMIT` | 60 | Separate IP bucket for `/social/users/search` |
+| `RATE_LIMIT_WINDOW_SECONDS` | 60 | Fixed-window duration for every bucket |
 | `METRICS_TOKEN` | Unset (disabled) | Independent secret, at least 32 characters; used as Bearer token |
 | `CORS_ORIGINS` | `[]` | JSON list, e.g. `["https://fit.example.com"]`; exact origins, no paths/trailing slash/wildcard |
 | `BACKUP_DIRECTORY` | `./backups` | Snapshot destination for backup CLI |

@@ -12,7 +12,7 @@ JSON` or a specific message. Request IDs appear in `X-Request-ID`.
 
 Each OpenAPI operation declares only the error statuses it can return, all with the
 `ErrorResponse` body. 429 (with `Retry-After`) appears only on throttled routes:
-`/auth/*` and `/profile/password`. Meal and workout responses have typed schemas;
+`/auth/*`, `/profile/password` and `/social/users/search`. Meal and workout responses have typed schemas;
 `items` is optional because empty collections are omitted. Registration and profile
 PUT list `gender` and `activity_level` as required enums, because the service
 rejects any other value with 400 `Invalid profile`. `tests/test_openapi_responses.py`
@@ -199,6 +199,19 @@ Days without meals return zeros. `targets` is `null` when none are configured
 `Invalid date`. Dates are compared as stored; the server never applies a timezone,
 so clients send the user's local date. Revision `0004_meal_dates` indexes
 `meals(user_id, date, id)` for both queries.
+
+## Friend discovery
+
+`GET /social/users/search?q=PREFIX` finds users whose username starts with `q` (3–200
+characters; otherwise 400 `Invalid q`). ASCII letters match case-insensitively;
+other characters match exactly, and `%`/`_` are literal. It returns at most 20
+results ordered by username, each exactly `{"id", "username", "name"}` (`name` is the
+profile name, or `null` without a profile). No other profile field is exposed. The
+caller and anyone with a block in either direction are excluded; pending and
+accepted friends remain visible. There is no pagination. Requests share a per-IP
+bucket (`SEARCH_RATE_LIMIT`, default 60 per window) and return 429 with
+`Retry-After` when exhausted; attempts count before authentication. Send a friend
+request with the returned `id` through `POST /social/friendships`.
 
 ## Workout history and pagination
 

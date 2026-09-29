@@ -292,6 +292,8 @@ def test_workout_and_social_responses_match_contract(call, headers):
     call("GET", "/social/leaderboard", 200, token=token, params={"exercise": "bench"})
     call("GET", "/social/leaderboard", 400, token=token)
     call("GET", "/social/muscle-ranks", 200, token=token)
+    call("GET", "/social/users/search", 200, token=token, params={"q": "user"})
+    call("GET", "/social/users/search", 400, token=token, params={"q": "us"})
     request = {"user1_id": 1, "user2_id": 2, "status": "pending"}
     call("POST", "/social/friendships", 201, token=token, json=request)
     call("POST", "/social/friendships", 409, token=token, json=request)
@@ -328,9 +330,10 @@ def test_error_declarations_are_specific(client):
             if "429" in responses:
                 assert "Retry-After" in responses["429"]["headers"]
                 throttled.add(path)
-    # Only the auth and recovery buckets throttle (OperationsService.throttle).
+    # Only the auth, recovery and search buckets throttle (OperationsService.throttle).
     assert throttled == {path for path in spec["paths"] if path.startswith("/auth/")} | {
-        "/profile/password"
+        "/profile/password",
+        "/social/users/search",
     }
     assert "HTTPValidationError" not in spec["components"]["schemas"]
     for name in ("RegisterRequest", "ProfileRequest"):

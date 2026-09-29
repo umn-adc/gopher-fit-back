@@ -34,7 +34,8 @@ a blank name. These modules do not perform persistence or HTTP work.
 Registration composes `ProfileService` with `AuthRepository` so user and profile
 creation share a transaction. The profile repository also accesses user identity
 and password fields. Social rankings read the `PersonalRecordORM` projection
-owned and maintained by workouts; social never changes workout data. These are
+owned and maintained by workouts; social never changes workout data. Username search
+reads `UserORM` and only the `name` of `ProfileORM`. These are
 explicit, limited cross-feature dependencies. No feature imports another router.
 
 ## Sessions and transactions

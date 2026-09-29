@@ -1128,6 +1128,37 @@
         "title": "ResetRequest",
         "type": "object"
       },
+      "UserSearchResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Profile name; null when the user has no profile",
+            "title": "Name"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "name"
+        ],
+        "title": "UserSearchResponse",
+        "type": "object"
+      },
       "UsernameRequest": {
         "properties": {
           "username": {
@@ -4516,6 +4547,100 @@
           }
         ],
         "summary": "Muscle Ranks",
+        "tags": [
+          "social"
+        ]
+      }
+    },
+    "/social/users/search": {
+      "get": {
+        "description": "Up to 20 users, excluding the caller and anyone with a block in either direction.",
+        "operationId": "search_users_social_users_search_get",
+        "parameters": [
+          {
+            "description": "Username prefix; ASCII letters match case-insensitively",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Username prefix; ASCII letters match case-insensitively",
+              "maxLength": 200,
+              "minLength": 3,
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserSearchResponse"
+                  },
+                  "title": "Response Search Users Social Users Search Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the next window",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Search Users",
         "tags": [
           "social"
         ]

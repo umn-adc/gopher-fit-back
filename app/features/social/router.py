@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 
 from app.core.database import DatabaseSession
 from app.core.http import PositiveResourceID
@@ -12,6 +12,7 @@ from app.features.social.models import (
     FriendshipResponse,
     LeaderboardResponse,
     MuscleRankResponse,
+    UserSearchResponse,
 )
 from app.features.social.repository import SocialRepository
 from app.features.social.service import SocialService
@@ -24,6 +25,23 @@ def get_service(session: DatabaseSession) -> SocialService:
 
 
 Service = Annotated[SocialService, Depends(get_service)]
+
+
+@router.get("/users/search", responses=errors(400, 429))
+def search_users(
+    user: CurrentUser,
+    service: Service,
+    q: Annotated[
+        str,
+        Query(
+            min_length=3,
+            max_length=200,
+            description="Username prefix; ASCII letters match case-insensitively",
+        ),
+    ],
+) -> list[UserSearchResponse]:
+    """Up to 20 users, excluding the caller and anyone with a block in either direction."""
+    return service.search_users(user, q)
 
 
 @router.get("/leaderboard", responses=errors(400))

@@ -5,9 +5,12 @@ from app.features.social.models import (
     FriendshipResponse,
     LeaderboardResponse,
     MuscleRankResponse,
+    UserSearchResponse,
 )
 from app.features.social.repository import Collection, SocialRepository
 from app.features.workouts.exercises import exercise_key
+
+SEARCH_RESULTS = 20
 
 
 def friendship_pair(user_id: int, other_id: int) -> tuple[int, int]:
@@ -75,6 +78,9 @@ class SocialService:
             raise InvalidInput("Cannot delete another user's block")
         if not self.repository.delete(previous):
             raise Conflict("Relationship changed; reload before retrying")
+
+    def search_users(self, user_id: int, prefix: str) -> list[UserSearchResponse]:
+        return self.repository.search_users(user_id, prefix, SEARCH_RESULTS)
 
     def leaderboard(self, exercise: str, page: Page) -> list[LeaderboardResponse]:
         key = exercise_key(exercise)

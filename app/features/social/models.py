@@ -1,3 +1,4 @@
+from pydantic import Field
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,6 +34,12 @@ class FriendshipRequest(RequestSchema):
 
 class FriendshipResponse(FriendshipRequest):
     action_user_id: int
+
+
+class UserSearchResponse(Schema):
+    id: int
+    username: str
+    name: str | None = Field(description="Profile name; null when the user has no profile")
 
 
 class LeaderboardResponse(Schema):
