@@ -135,8 +135,8 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         details = error.errors()
         message = "Invalid JSON"
         for detail in details:
-            if detail["loc"][0] == "path":
-                message = "Invalid " + str(detail["loc"][-1])
+            if detail["loc"][0] in ("path", "query"):
+                message = "Invalid " + str(detail["loc"][1])
                 break
         return JSONResponse({"error": message}, status_code=400)
 

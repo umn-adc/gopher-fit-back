@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 
 from app.core.database import DatabaseSession
 from app.core.http import PositiveResourceID, ResourceID
@@ -10,10 +10,12 @@ from app.features.auth.dependencies import CurrentUser
 from app.features.nutrition.models import (
     MacroGoalsRequest,
     MacroGoalsResponse,
+    MealDate,
     MealItemRequest,
     MealItemResponse,
     MealRequest,
     MealResponse,
+    NutritionSummaryResponse,
 )
 from app.features.nutrition.repository import NutritionRepository
 from app.features.nutrition.service import NutritionService
@@ -26,11 +28,24 @@ def get_service(session: DatabaseSession) -> NutritionService:
 
 
 Service = Annotated[NutritionService, Depends(get_service)]
+DATE = "Local calendar date, YYYY-MM-DD, compared with each meal's date"
 
 
 @router.get("/meals", responses=errors(400))
-def meals(user: CurrentUser, service: Service, page: Pagination) -> list[MealResponse]:
-    return service.meals(user, page)
+def meals(
+    user: CurrentUser,
+    service: Service,
+    page: Pagination,
+    date: Annotated[MealDate | None, Query(description=DATE)] = None,
+) -> list[MealResponse]:
+    return service.meals(user, page, date)
+
+
+@router.get("/summary", responses=errors(400))
+def summary(
+    user: CurrentUser, service: Service, date: Annotated[MealDate, Query(description=DATE)]
+) -> NutritionSummaryResponse:
+    return service.summary(user, date)
 
 
 @router.post("/meals", status_code=201, responses=errors(400))

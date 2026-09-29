@@ -11,6 +11,7 @@ from app.features.nutrition.models import (
     MealORM,
     MealRequest,
     MealResponse,
+    NutritionSummaryResponse,
 )
 from app.features.nutrition.repository import NutritionRepository
 from app.features.workouts.exercises import display_name
@@ -41,8 +42,8 @@ class NutritionService:
             total_calories=sum(item.calories for item in items),
         )
 
-    def meals(self, user_id: int, page: Page) -> list[MealResponse]:
-        meals = self.repository.meals(user_id, page)
+    def meals(self, user_id: int, page: Page, date: str | None = None) -> list[MealResponse]:
+        meals = self.repository.meals(user_id, page, date)
         children = self.repository.items_for([meal.id for meal in meals])
         return [self._response(meal, children[meal.id]) for meal in meals]
 
@@ -104,6 +105,18 @@ class NutritionService:
         if item is None:
             raise NotFound("Meal item not found")
         self.repository.delete_item(item)
+
+    def summary(self, user_id: int, date: str) -> NutritionSummaryResponse:
+        calories, protein, carbs, fat = self.repository.totals(user_id, date)
+        goals = self.repository.macro_goals(user_id)
+        return NutritionSummaryResponse(
+            date=date,
+            calories=calories,
+            protein=protein,
+            carbs=carbs,
+            fat=fat,
+            targets=None if goals is None else MacroGoalsResponse.model_validate(goals),
+        )
 
     def macro_goals(self, user_id: int) -> MacroGoalsResponse:
         goals = self.repository.macro_goals(user_id)

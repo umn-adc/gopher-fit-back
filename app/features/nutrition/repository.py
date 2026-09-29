@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
@@ -19,13 +19,12 @@ class NutritionRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def meals(self, user_id: int, page: Page) -> Sequence[MealORM]:
+    def meals(self, user_id: int, page: Page, date: str | None = None) -> Sequence[MealORM]:
+        query = select(MealORM).where(MealORM.user_id == user_id)
+        if date is not None:
+            query = query.where(MealORM.date == date)
         return self.session.scalars(
-            select(MealORM)
-            .where(MealORM.user_id == user_id)
-            .order_by(MealORM.id)
-            .limit(page.limit)
-            .offset(page.offset)
+            query.order_by(MealORM.id).limit(page.limit).offset(page.offset)
         ).all()
 
     def meal(self, user_id: int, meal_id: int) -> MealORM | None:
@@ -49,6 +48,21 @@ class NutritionRepository:
             for row in rows:
                 grouped[row.meal_id].append(row)
         return grouped
+
+    def totals(self, user_id: int, date: str) -> tuple[int, int, int, int]:
+        item = MealItemORM
+        calories, protein, carbs, fat = self.session.execute(
+            select(
+                *(
+                    func.coalesce(func.sum(column), 0)
+                    for column in (item.calories, item.protein, item.carbs, item.fat)
+                )
+            )
+            .select_from(item)
+            .join(MealORM)
+            .where(MealORM.user_id == user_id, MealORM.date == date)
+        ).one()
+        return calories, protein, carbs, fat
 
     def item(self, user_id: int, meal_id: int, item_id: int) -> MealItemORM | None:
         return self.session.scalar(

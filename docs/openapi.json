@@ -604,6 +604,51 @@
         "title": "NestedWorkoutItemRequest",
         "type": "object"
       },
+      "NutritionSummaryResponse": {
+        "properties": {
+          "calories": {
+            "title": "Calories",
+            "type": "integer"
+          },
+          "carbs": {
+            "title": "Carbs",
+            "type": "integer"
+          },
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "fat": {
+            "title": "Fat",
+            "type": "integer"
+          },
+          "protein": {
+            "title": "Protein",
+            "type": "integer"
+          },
+          "targets": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MacroGoalsResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when no targets are set"
+          }
+        },
+        "required": [
+          "date",
+          "calories",
+          "protein",
+          "carbs",
+          "fat",
+          "targets"
+        ],
+        "title": "NutritionSummaryResponse",
+        "type": "object"
+      },
       "PasswordConfirmation": {
         "properties": {
           "password": {
@@ -2298,6 +2343,24 @@
         "operationId": "meals_nutrition_meals_get",
         "parameters": [
           {
+            "description": "Local calendar date, YYYY-MM-DD, compared with each meal's date",
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Local calendar date, YYYY-MM-DD, compared with each meal's date",
+              "title": "Date"
+            }
+          },
+          {
             "in": "query",
             "name": "limit",
             "required": false,
@@ -2937,6 +3000,75 @@
           }
         ],
         "summary": "Update Item",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/nutrition/summary": {
+      "get": {
+        "operationId": "summary_nutrition_summary_get",
+        "parameters": [
+          {
+            "description": "Local calendar date, YYYY-MM-DD, compared with each meal's date",
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "description": "Local calendar date, YYYY-MM-DD, compared with each meal's date",
+              "title": "Date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NutritionSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Summary",
         "tags": [
           "nutrition"
         ]

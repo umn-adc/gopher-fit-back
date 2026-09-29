@@ -165,3 +165,10 @@ the earlier ones; restore a verified backup instead. Tests upgrade populated leg
 Go and 0002 databases and check preservation, NULL defaults, CHECK constraints,
 foreign keys and `alembic check`.
 
+## Revision 0004: meal date index
+
+`0004_meal_dates` adds only the index `meals_user_date_id` on
+`meals(user_id, date, id)`, used by date-filtered meal lists and
+`GET /nutrition/summary` (without it the summary query scans the whole `meals`
+table). No rows change. Its downgrade drops the index.
+

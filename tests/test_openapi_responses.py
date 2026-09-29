@@ -159,6 +159,7 @@ def test_nutrition_responses_match_contract(call, headers):
     token = headers()["Authorization"].split()[1]
     call("GET", "/nutrition/meals", 401)
     call("GET", "/nutrition/macros", 404, token=token)
+    call("GET", "/nutrition/summary", 200, token=token, params={"date": "2026-09-25"})
     targets = {"calories_target": 2000, "protein_target": 0, "carbs_target": 1, "fat_target": 2}
     call("PUT", "/nutrition/macros", 200, token=token, json=targets)
     call("GET", "/nutrition/macros", 200, token=token)
@@ -182,6 +183,10 @@ def test_nutrition_responses_match_contract(call, headers):
     call("POST", "/nutrition/meals", 400, token=token, json={"date": "2026-02-30"})
     call("GET", "/nutrition/meals", 200, token=token, params={"limit": 1, "offset": 1})
     call("GET", "/nutrition/meals", 400, token=token, params={"limit": 0})
+    call("GET", "/nutrition/meals", 200, token=token, params={"date": "2026-09-25"})
+    call("GET", "/nutrition/meals", 400, token=token, params={"date": "2026-09-31"})
+    call("GET", "/nutrition/summary", 200, token=token, params={"date": "2026-09-25"})
+    call("GET", "/nutrition/summary", 400, token=token)
     call("GET", "/nutrition/meals/{id}", 200, token=token, id=meal["id"])
     call("GET", "/nutrition/meals/{id}", 404, token=token, id=999)
     added = call("POST", "/nutrition/meals/{id}/items", 201, token=token, json=item, id=empty["id"])

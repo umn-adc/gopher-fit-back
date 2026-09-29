@@ -6,7 +6,9 @@ by `make check`. All original method/path pairs remain. Responses use
 `{"error":"message"}` for errors, including HTTP 400 validation, 401 auth, 404
 ownership mismatches, 409 conflicts, 429 throttles, and 503 unavailable recovery.
 Unknown fields remain ignored; explicit null scalars are rejected unless documented
-as nullable. No 422 `detail` envelope is used. Request IDs appear in `X-Request-ID`.
+as nullable. No 422 `detail` envelope is used. An invalid path or query parameter
+returns `Invalid <name>` (for example `Invalid limit`); body errors return `Invalid
+JSON` or a specific message. Request IDs appear in `X-Request-ID`.
 
 Each OpenAPI operation declares only the error statuses it can return, all with the
 `ErrorResponse` body. 429 (with `Retry-After`) appears only on throttled routes:
@@ -173,6 +175,27 @@ in other workouts. Zero-weight items remain stored but do not rank.
   display preference only; profile height/weight remain whole cm/kg. Profiles
   created before revision 0003 read as `"metric"`. Profile PUT remains a full
   replacement, so omitting it restores `"metric"`.
+
+## Meals by date and daily summary
+
+`GET /nutrition/meals?date=YYYY-MM-DD` returns only the caller's meals whose `date`
+equals that local calendar date, with the same `limit`/`offset` paging and ID order.
+Without `date` it returns every meal, as before.
+
+`GET /nutrition/summary?date=YYYY-MM-DD` (date required) returns that day's totals
+across all of the caller's meal items and the caller's macro targets:
+
+```json
+{"date":"2026-09-25","calories":600,"protein":26,"carbs":72,"fat":15,
+ "targets":{"user_id":1,"calories_target":2000,"protein_target":0,
+            "carbs_target":250,"fat_target":70}}
+```
+
+Days without meals return zeros. `targets` is `null` when none are configured
+(where `GET /nutrition/macros` returns 404). An invalid or missing date returns 400
+`Invalid date`. Dates are compared as stored; the server never applies a timezone,
+so clients send the user's local date. Revision `0004_meal_dates` indexes
+`meals(user_id, date, id)` for both queries.
 
 ## Workout history and pagination
 
