@@ -1,7 +1,7 @@
 # Architecture
 
-The application has six features: auth, profile, nutrition, workouts, social, and
-operations.
+The application has seven features: auth, profile, nutrition, workouts, social,
+health, and operations.
 Each owns its Pydantic schemas, SQLAlchemy mappings, persistence operations,
 business rules, and HTTP routes. ORM classes end in `ORM`; API schemas end in
 `Request` or `Response`. There are no generic repositories or service bases.
@@ -37,6 +37,11 @@ and password fields. Social rankings read the `PersonalRecordORM` projection
 owned and maintained by workouts; social never changes workout data. Username search
 reads `UserORM` and only the `name` of `ProfileORM`. These are
 explicit, limited cross-feature dependencies. No feature imports another router.
+Health stores data the mobile app imports from Apple Health / Health Connect in its
+own tables; it reuses nutrition's `MealDate` validator and reads or writes no other
+feature's tables. Its routes share the `/health` path prefix with the public
+operations probes, so only `/health/connections` is in the pre-routing
+authentication list.
 
 ## Sessions and transactions
 

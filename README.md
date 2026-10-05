@@ -65,8 +65,9 @@ workout timestamps, authentication/recovery/rate-limit tables, and indexes. It
 preserves existing rows and leaves historical workout times unknown. `0003_units`
 adds nullable weight-unit, overall-minutes and unit-preference columns, leaving
 historical units unknown and rebuilding the derived personal records empty.
-`0004`–`0006` add a meal date index, an optional weekly workout target, and
-favorite meal tables, all without changing existing rows. Startup
+`0004`–`0007` add a meal date index, an optional weekly workout target,
+favorite meal tables, and tables for health data imported from Apple Health /
+Health Connect, all without changing existing rows. Startup
 requires the current migration head; it never applies migrations automatically.
 
 Create a consistent backup and rehearse restoring to a new file:

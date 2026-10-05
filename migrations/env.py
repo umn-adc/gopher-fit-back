@@ -13,6 +13,7 @@ from sqlalchemy.engine import make_url
 
 from app.core.database import Base, create_database_engine
 from app.features.auth import models as auth_models  # noqa: F401
+from app.features.health import models as health_models  # noqa: F401
 from app.features.nutrition import models as nutrition_models  # noqa: F401
 from app.features.operations import models as operations_models  # noqa: F401
 from app.features.profile import models as profile_models  # noqa: F401

@@ -235,6 +235,33 @@ bucket (`SEARCH_RATE_LIMIT`, default 60 per window) and return 429 with
 `Retry-After` when exhausted; attempts count before authentication. Send a friend
 request with the returned `id` through `POST /social/friendships`.
 
+## Health data (Apple Health and Health Connect)
+
+The mobile app imports data from Apple Health (iOS, provider `apple_health`) or
+Health Connect (Android, provider `health_connect`). Neither platform has a server
+API: the app asks the OS for read access, reads on the device, and uploads windows
+of data here. The server never contacts Apple or Google. Imported data lives in its
+own tables and never appears in workouts, personal records, leaderboards, streaks,
+`profiles.weight` or macro targets. This revision adds no endpoints that read the
+imported rows back.
+
+| Endpoint | Result |
+|---|---|
+| GET `/health/connections` | 200 list with both providers, always in the order `apple_health`, `health_connect` |
+| PUT `/health/connections/{provider}` | 200 connection; body `{"data_types": [...]}` (1–6 unique types the user granted). Connecting again updates the types and keeps `connected_at` |
+| DELETE `/health/connections/{provider}` | 204; disconnects only. Syncing stops, imported data is kept, `last_synced_at` resets so a reconnect backfills again |
+| DELETE `/health/connections/{provider}/data` | 204; permanently deletes everything imported from that provider, connected or not, and resets `last_synced_at` |
+
+An unknown provider returns 400 `Invalid provider`. Data types are `steps`,
+`active_energy`, `heart_rate`, `resting_heart_rate`, `workouts` and `weight`. A
+connection reports `connected`, `data_types` (`[]` when disconnected),
+`connected_at`, `last_synced_at`, and row counts `synced_days`, `synced_workouts`
+and `synced_weights` (counts stay after a disconnect).
+
+Responses carry `Cache-Control: no-store`. The public probes `/health/live` and
+`/health/ready` are unrelated and stay unauthenticated.
+
+
 ## Workout history and pagination
 
 `occurred_at` on workout POST/PUT is an ISO 8601 timestamp with `T` and an explicit

@@ -225,6 +225,113 @@
         "title": "FriendshipResponse",
         "type": "object"
       },
+      "HealthConnectRequest": {
+        "properties": {
+          "data_types": {
+            "description": "Types the user granted on the device",
+            "items": {
+              "enum": [
+                "steps",
+                "active_energy",
+                "heart_rate",
+                "resting_heart_rate",
+                "workouts",
+                "weight"
+              ],
+              "type": "string"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Data Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data_types"
+        ],
+        "title": "HealthConnectRequest",
+        "type": "object"
+      },
+      "HealthConnectionResponse": {
+        "properties": {
+          "connected": {
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "connected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connected At"
+          },
+          "data_types": {
+            "items": {
+              "enum": [
+                "steps",
+                "active_energy",
+                "heart_rate",
+                "resting_heart_rate",
+                "workouts",
+                "weight"
+              ],
+              "type": "string"
+            },
+            "title": "Data Types",
+            "type": "array"
+          },
+          "last_synced_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "End of the most recently synced window; null before the first sync",
+            "title": "Last Synced At"
+          },
+          "provider": {
+            "enum": [
+              "apple_health",
+              "health_connect"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "synced_days": {
+            "title": "Synced Days",
+            "type": "integer"
+          },
+          "synced_weights": {
+            "title": "Synced Weights",
+            "type": "integer"
+          },
+          "synced_workouts": {
+            "title": "Synced Workouts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "provider",
+          "connected",
+          "data_types",
+          "connected_at",
+          "last_synced_at",
+          "synced_days",
+          "synced_workouts",
+          "synced_weights"
+        ],
+        "title": "HealthConnectionResponse",
+        "type": "object"
+      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -2349,6 +2456,269 @@
         "summary": "Register",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/health/connections": {
+      "get": {
+        "operationId": "connections_health_connections_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HealthConnectionResponse"
+                  },
+                  "title": "Response Connections Health Connections Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Connections",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/connections/{provider}": {
+      "delete": {
+        "operationId": "disconnect_health_connections__provider__delete",
+        "parameters": [
+          {
+            "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+              "enum": [
+                "apple_health",
+                "health_connect"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Disconnect",
+        "tags": [
+          "health"
+        ]
+      },
+      "put": {
+        "operationId": "connect_health_connections__provider__put",
+        "parameters": [
+          {
+            "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+              "enum": [
+                "apple_health",
+                "health_connect"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthConnectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthConnectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Connect",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/connections/{provider}/data": {
+      "delete": {
+        "operationId": "delete_data_health_connections__provider__data_delete",
+        "parameters": [
+          {
+            "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+              "enum": [
+                "apple_health",
+                "health_connect"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Data",
+        "tags": [
+          "health"
         ]
       }
     },

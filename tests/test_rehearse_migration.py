@@ -24,9 +24,7 @@ def test_rehearsal_upgrades_a_copy_and_reports_counts(tmp_path, capsys):
 
     assert digest(source) == original and source.stat().st_mtime_ns == modified
     assert not (tmp_path / "legacy.db.pre-python.bak").exists()
-    assert "Revision:             none (not yet adopted by Alembic) -> 0006_favorite_meals" in (
-        output
-    )
+    assert "Revision:             none (not yet adopted by Alembic) -> 0007_health_sync" in (output)
     assert "no schema differences" in output and "foreign_key_check: no violations" in output
     rows = {
         line.split()[0]: line.split()[1:]
@@ -40,7 +38,7 @@ def test_rehearsal_upgrades_a_copy_and_reports_counts(tmp_path, capsys):
     }
     with sqlite3.connect(workdir / "rehearsal.db") as copy:
         assert copy.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0006_favorite_meals",
+            "0007_health_sync",
         )
         upgraded = snapshot(copy)
         assert {table: upgraded[table] for table in before} == before
@@ -53,7 +51,7 @@ def test_rehearsal_of_a_current_database_is_a_no_op_upgrade(tmp_path, capsys):
     migrate(source)
     original = digest(source)
     main([str(source), "--workdir", str(tmp_path / "work")])
-    assert "0006_favorite_meals -> 0006_favorite_meals" in capsys.readouterr().out
+    assert "0007_health_sync -> 0007_health_sync" in capsys.readouterr().out
     assert digest(source) == original
 
 

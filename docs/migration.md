@@ -188,3 +188,15 @@ downgrade refuses; restore a verified backup instead. This replaces the unfinish
 Go `favorite-meals` branch with a new design (see `branch-triage.md`); none of its
 SQL was reused.
 
+## Revision 0007: imported health data
+
+`0007_health_sync` creates four tables, each with `ON DELETE CASCADE` from `users`:
+`health_connections` (primary key user + provider; connected flag, granted types as
+a JSON array, connect and last-sync timestamps), `health_daily_activity` (unique
+user + provider + date; nullable steps, active energy and heart-rate columns),
+`health_workouts` and `health_weight_samples` (unique user + provider +
+`external_id`; UTC timestamp text like workouts). Indexes cover window replacement
+(`health_workouts(user_id, provider, start_at)`) and future weight trends
+(`health_weight_samples(user_id, measured_at)`). No existing table or row changes.
+The downgrade refuses; restore a verified backup instead.
+

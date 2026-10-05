@@ -31,6 +31,7 @@ from app.core.middleware import OperationalMiddleware, configure_logging
 from app.features.auth.delivery import RecoveryMailer
 from app.features.auth.router import router as auth_router
 from app.features.auth.security import TokenService
+from app.features.health.router import router as health_router
 from app.features.nutrition.router import router as nutrition_router
 from app.features.operations.repository import OperationsRepository
 from app.features.operations.router import router as operations_router
@@ -176,6 +177,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
         nutrition_router,
         workout_router,
         social_router,
+        health_router,
         operations_router,
     ):
         app.include_router(router)

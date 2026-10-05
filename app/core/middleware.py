@@ -60,7 +60,7 @@ class OperationalMiddleware:
                 status = message["status"]
                 response_headers = MutableHeaders(scope=message)
                 response_headers["X-Request-ID"] = request_id
-                if path.startswith(("/auth/", "/profile/")):
+                if path.startswith(("/auth/", "/profile/", "/health/connections")):
                     response_headers["Cache-Control"] = "no-store"
             await send(message)
 
@@ -89,7 +89,7 @@ class OperationalMiddleware:
                 }:
                     response = RedirectResponse(str(URL(scope=scope).replace(path=path + "/")), 301)
                 if response is None and path.startswith(
-                    ("/profile/", "/nutrition/", "/workouts/", "/social/")
+                    ("/profile/", "/nutrition/", "/workouts/", "/social/", "/health/connections")
                 ):
                     parts = headers.get("Authorization", "").split()
                     try:

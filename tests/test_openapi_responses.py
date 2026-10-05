@@ -341,6 +341,29 @@ def test_workout_and_social_responses_match_contract(call, headers):
     call("GET", "/health/ready", 200)
 
 
+def test_health_responses_match_contract(call, headers):
+    token = headers(1)["Authorization"].split()[1]
+    call("GET", "/health/connections", 401)
+    call("GET", "/health/connections", 200, token=token)
+    types = {"data_types": ["steps", "heart_rate", "workouts", "weight"]}
+    call(
+        "PUT",
+        "/health/connections/{provider}",
+        200,
+        token=token,
+        json=types,
+        provider="apple_health",
+    )
+    call(
+        "PUT", "/health/connections/{provider}", 400, token=token, json={}, provider="apple_health"
+    )
+    call("PUT", "/health/connections/{provider}", 400, token=token, json=types, provider="fit")
+    call("GET", "/health/connections", 200, token=token)
+    for path in ("/health/connections/{provider}", "/health/connections/{provider}/data"):
+        call("DELETE", path, 204, token=token, provider="apple_health")
+        call("DELETE", path, 400, token=token, provider="fit")
+
+
 def test_error_declarations_are_specific(client):
     spec = client.get("/swagger/doc.json").json()
     throttled = set()
