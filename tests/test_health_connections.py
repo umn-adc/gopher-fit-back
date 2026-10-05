@@ -92,6 +92,7 @@ def test_connect_validation(authed, body):
         ("PUT", "/health/connections/google_fit"),
         ("DELETE", "/health/connections/fitbit"),
         ("DELETE", "/health/connections/APPLE_HEALTH/data"),
+        ("POST", "/health/connections/strava/sync"),
     ],
 )
 def test_unknown_provider_is_invalid(authed, method, path):
@@ -105,6 +106,7 @@ def test_routes_require_auth_but_probes_stay_public(client):
         ("GET", "/health/connections"),
         ("PUT", "/health/connections/apple_health"),
         ("DELETE", "/health/connections/apple_health/data"),
+        ("POST", "/health/connections/apple_health/sync"),
     ]:
         response = client.request(method, path, json={})
         assert response.status_code == 401, path

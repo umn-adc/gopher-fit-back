@@ -1,7 +1,9 @@
 import json
 from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
 from app.features.health.models import (
@@ -73,3 +75,65 @@ class HealthRepository:
             .where(HealthConnectionORM.user_id == user_id, HealthConnectionORM.provider == provider)
             .values(last_synced_at=None)
         )
+
+    def upsert_daily(
+        self, user_id: int, provider: str, columns: list[str], rows: list[dict[str, Any]]
+    ) -> None:
+        """Insert or update days, writing only `columns`; other columns keep their values."""
+        if not columns or not rows:
+            return
+        statement = insert(HealthDailyActivityORM)
+        statement = statement.on_conflict_do_update(
+            index_elements=["user_id", "provider", "date"],
+            set_={column: statement.excluded[column] for column in columns},
+        )
+        self.session.execute(
+            statement,
+            [
+                {"user_id": user_id, "provider": provider, "date": row["date"]}
+                | {column: row[column] for column in columns}
+                for row in rows
+            ],
+        )
+
+    def replace_workouts(
+        self, user_id: int, provider: str, since: str, until: str, rows: list[dict[str, Any]]
+    ) -> None:
+        """Replace the window's sessions and any re-sent session that moved into it."""
+        self.session.execute(
+            delete(HealthWorkoutORM).where(
+                HealthWorkoutORM.user_id == user_id,
+                HealthWorkoutORM.provider == provider,
+                or_(
+                    (HealthWorkoutORM.start_at >= since) & (HealthWorkoutORM.start_at < until),
+                    HealthWorkoutORM.external_id.in_([row["external_id"] for row in rows]),
+                ),
+            )
+        )
+        self.session.add_all(
+            HealthWorkoutORM(user_id=user_id, provider=provider, **row) for row in rows
+        )
+        self.session.flush()
+
+    def replace_weights(
+        self, user_id: int, provider: str, since: str, until: str, rows: list[dict[str, Any]]
+    ) -> None:
+        self.session.execute(
+            delete(HealthWeightSampleORM).where(
+                HealthWeightSampleORM.user_id == user_id,
+                HealthWeightSampleORM.provider == provider,
+                or_(
+                    (HealthWeightSampleORM.measured_at >= since)
+                    & (HealthWeightSampleORM.measured_at < until),
+                    HealthWeightSampleORM.external_id.in_([row["external_id"] for row in rows]),
+                ),
+            )
+        )
+        self.session.add_all(
+            HealthWeightSampleORM(user_id=user_id, provider=provider, **row) for row in rows
+        )
+        self.session.flush()
+
+    def mark_synced(self, connection: HealthConnectionORM, at: str) -> None:
+        connection.last_synced_at = at
+        self.session.flush()

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     auth_rate_limit: int = Field(default=20, gt=0)
     recovery_rate_limit: int = Field(default=5, gt=0)
     search_rate_limit: int = Field(default=60, gt=0)
+    health_sync_rate_limit: int = Field(default=30, gt=0)
     rate_limit_window_seconds: int = Field(default=60, gt=0)
     metrics_token: SecretStr | None = None
     cors_origins: list[str] = Field(default_factory=list)

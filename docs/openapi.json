@@ -332,6 +332,98 @@
         "title": "HealthConnectionResponse",
         "type": "object"
       },
+      "HealthDailyRequest": {
+        "description": "One local calendar day. Values of types the request doesn't cover are ignored.",
+        "properties": {
+          "active_energy_kcal": {
+            "anyOf": [
+              {
+                "maximum": 20000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Energy Kcal"
+          },
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "heart_rate_avg_bpm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 20.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate Avg Bpm"
+          },
+          "heart_rate_max_bpm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 20.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate Max Bpm"
+          },
+          "heart_rate_min_bpm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 20.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate Min Bpm"
+          },
+          "resting_heart_rate_bpm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 20.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resting Heart Rate Bpm"
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "maximum": 200000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps"
+          }
+        },
+        "required": [
+          "date"
+        ],
+        "title": "HealthDailyRequest",
+        "type": "object"
+      },
       "HealthResponse": {
         "properties": {
           "status": {
@@ -343,6 +435,204 @@
           "status"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "HealthSyncRequest": {
+        "properties": {
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/HealthDailyRequest"
+            },
+            "maxItems": 31,
+            "title": "Daily",
+            "type": "array"
+          },
+          "data_types": {
+            "description": "Types read for this window; others are untouched",
+            "items": {
+              "enum": [
+                "steps",
+                "active_energy",
+                "heart_rate",
+                "resting_heart_rate",
+                "workouts",
+                "weight"
+              ],
+              "type": "string"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Data Types",
+            "type": "array"
+          },
+          "since": {
+            "description": "Window start (inclusive)",
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "until": {
+            "description": "Window end (exclusive), at most 31 days after since",
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          },
+          "weights": {
+            "items": {
+              "$ref": "#/components/schemas/HealthWeightRequest"
+            },
+            "maxItems": 500,
+            "title": "Weights",
+            "type": "array"
+          },
+          "workouts": {
+            "items": {
+              "$ref": "#/components/schemas/HealthWorkoutRequest"
+            },
+            "maxItems": 500,
+            "title": "Workouts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "since",
+          "until",
+          "data_types"
+        ],
+        "title": "HealthSyncRequest",
+        "type": "object"
+      },
+      "HealthWeightRequest": {
+        "properties": {
+          "external_id": {
+            "description": "HealthKit UUID or Health Connect record id",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "External Id",
+            "type": "string"
+          },
+          "measured_at": {
+            "format": "date-time",
+            "title": "Measured At",
+            "type": "string"
+          },
+          "weight_kg": {
+            "maximum": 400.0,
+            "minimum": 20.0,
+            "title": "Weight Kg",
+            "type": "number"
+          }
+        },
+        "required": [
+          "external_id",
+          "measured_at",
+          "weight_kg"
+        ],
+        "title": "HealthWeightRequest",
+        "type": "object"
+      },
+      "HealthWorkoutRequest": {
+        "properties": {
+          "activity_type": {
+            "enum": [
+              "running",
+              "walking",
+              "cycling",
+              "swimming",
+              "strength_training",
+              "hiit",
+              "yoga",
+              "other"
+            ],
+            "title": "Activity Type",
+            "type": "string"
+          },
+          "avg_heart_rate_bpm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 20.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Heart Rate Bpm"
+          },
+          "end_at": {
+            "format": "date-time",
+            "title": "End At",
+            "type": "string"
+          },
+          "energy_kcal": {
+            "anyOf": [
+              {
+                "maximum": 20000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy Kcal"
+          },
+          "external_id": {
+            "description": "HealthKit UUID or Health Connect record id",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "External Id",
+            "type": "string"
+          },
+          "max_heart_rate_bpm": {
+            "anyOf": [
+              {
+                "maximum": 250.0,
+                "minimum": 20.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Heart Rate Bpm"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "App or device that recorded it",
+            "title": "Source Name"
+          },
+          "source_type": {
+            "description": "The platform's own workout type",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source Type",
+            "type": "string"
+          },
+          "start_at": {
+            "format": "date-time",
+            "title": "Start At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_id",
+          "activity_type",
+          "source_type",
+          "start_at",
+          "end_at"
+        ],
+        "title": "HealthWorkoutRequest",
         "type": "object"
       },
       "LeaderboardResponse": {
@@ -2717,6 +3007,117 @@
           }
         ],
         "summary": "Delete Data",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/connections/{provider}/sync": {
+      "post": {
+        "operationId": "sync_health_connections__provider__sync_post",
+        "parameters": [
+          {
+            "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "description": "apple_health (iOS HealthKit) or health_connect (Android)",
+              "enum": [
+                "apple_health",
+                "health_connect"
+              ],
+              "title": "Provider",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthConnectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid, expired or revoked access token"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The provider is not connected for this account"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the next window",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Database or stored-data failure"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sync",
         "tags": [
           "health"
         ]

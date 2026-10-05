@@ -8,6 +8,7 @@ from app.features.auth.dependencies import CurrentUser
 from app.features.health.models import (
     HealthConnectionResponse,
     HealthConnectRequest,
+    HealthSyncRequest,
     Provider,
 )
 from app.features.health.repository import HealthRepository
@@ -48,3 +49,13 @@ def disconnect(provider: ProviderPath, user: CurrentUser, service: Service) -> R
 def delete_data(provider: ProviderPath, user: CurrentUser, service: Service) -> Response:
     service.delete_data(user, provider)
     return Response(status_code=204)
+
+
+@router.post(
+    "/{provider}/sync",
+    responses=errors(400, (409, "The provider is not connected for this account"), 429),
+)
+def sync(
+    provider: ProviderPath, request: HealthSyncRequest, user: CurrentUser, service: Service
+) -> HealthConnectionResponse:
+    return service.sync(user, provider, request)

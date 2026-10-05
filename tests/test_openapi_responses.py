@@ -343,8 +343,15 @@ def test_workout_and_social_responses_match_contract(call, headers):
 
 def test_health_responses_match_contract(call, headers):
     token = headers(1)["Authorization"].split()[1]
+    sync = "/health/connections/{provider}/sync"
     call("GET", "/health/connections", 401)
     call("GET", "/health/connections", 200, token=token)
+    window = {
+        "since": "2026-09-01T00:00:00Z",
+        "until": "2026-09-02T00:00:00Z",
+        "data_types": ["steps", "heart_rate", "workouts", "weight"],
+    }
+    call("POST", sync, 409, token=token, json=window, provider="apple_health")
     types = {"data_types": ["steps", "heart_rate", "workouts", "weight"]}
     call(
         "PUT",
@@ -358,6 +365,23 @@ def test_health_responses_match_contract(call, headers):
         "PUT", "/health/connections/{provider}", 400, token=token, json={}, provider="apple_health"
     )
     call("PUT", "/health/connections/{provider}", 400, token=token, json=types, provider="fit")
+    data = {
+        **window,
+        "daily": [{"date": "2026-09-01", "steps": 10, "heart_rate_avg_bpm": 70}],
+        "workouts": [
+            {
+                "external_id": "w1",
+                "activity_type": "cycling",
+                "source_type": "ExerciseSessionRecord.EXERCISE_TYPE_BIKING",
+                "start_at": "2026-09-01T10:00:00Z",
+                "end_at": "2026-09-01T11:00:00Z",
+                "max_heart_rate_bpm": 150,
+            }
+        ],
+        "weights": [{"external_id": "kg", "measured_at": "2026-09-01T06:00:00Z", "weight_kg": 80}],
+    }
+    call("POST", sync, 200, token=token, json=data, provider="apple_health")
+    call("POST", sync, 400, token=token, json={**data, "daily": [{}]}, provider="apple_health")
     call("GET", "/health/connections", 200, token=token)
     for path in ("/health/connections/{provider}", "/health/connections/{provider}/data"):
         call("DELETE", path, 204, token=token, provider="apple_health")
@@ -379,10 +403,12 @@ def test_error_declarations_are_specific(client):
             if "429" in responses:
                 assert "Retry-After" in responses["429"]["headers"]
                 throttled.add(path)
-    # Only the auth, recovery and search buckets throttle (OperationsService.throttle).
+    # Only the auth, recovery, search and health sync buckets throttle
+    # (OperationsService.throttle).
     assert throttled == {path for path in spec["paths"] if path.startswith("/auth/")} | {
         "/profile/password",
         "/social/users/search",
+        "/health/connections/{provider}/sync",
     }
     assert "HTTPValidationError" not in spec["components"]["schemas"]
     for name in ("RegisterRequest", "ProfileRequest"):

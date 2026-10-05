@@ -12,7 +12,8 @@ JSON` or a specific message. Request IDs appear in `X-Request-ID`.
 
 Each OpenAPI operation declares only the error statuses it can return, all with the
 `ErrorResponse` body. 429 (with `Retry-After`) appears only on throttled routes:
-`/auth/*`, `/profile/password` and `/social/users/search`. Meal and workout responses have typed schemas;
+`/auth/*`, `/profile/password`, `/social/users/search` and
+`/health/connections/{provider}/sync`. Meal and workout responses have typed schemas;
 `items` is optional because empty collections are omitted. Registration and profile
 PUT list `gender` and `activity_level` as required enums, because the service
 rejects any other value with 400 `Invalid profile`. `tests/test_openapi_responses.py`
@@ -251,6 +252,7 @@ imported rows back.
 | PUT `/health/connections/{provider}` | 200 connection; body `{"data_types": [...]}` (1–6 unique types the user granted). Connecting again updates the types and keeps `connected_at` |
 | DELETE `/health/connections/{provider}` | 204; disconnects only. Syncing stops, imported data is kept, `last_synced_at` resets so a reconnect backfills again |
 | DELETE `/health/connections/{provider}/data` | 204; permanently deletes everything imported from that provider, connected or not, and resets `last_synced_at` |
+| POST `/health/connections/{provider}/sync` | 200 connection after storing one window; 409 when not connected |
 
 An unknown provider returns 400 `Invalid provider`. Data types are `steps`,
 `active_energy`, `heart_rate`, `resting_heart_rate`, `workouts` and `weight`. A
@@ -258,9 +260,51 @@ connection reports `connected`, `data_types` (`[]` when disconnected),
 `connected_at`, `last_synced_at`, and row counts `synced_days`, `synced_workouts`
 and `synced_weights` (counts stay after a disconnect).
 
-Responses carry `Cache-Control: no-store`. The public probes `/health/live` and
-`/health/ready` are unrelated and stay unauthenticated.
+A sync body covers one window:
 
+```json
+{"since":"2026-09-01T05:00:00Z","until":"2026-09-08T05:00:00Z",
+ "data_types":["steps","active_energy","heart_rate","resting_heart_rate","workouts","weight"],
+ "daily":[{"date":"2026-09-01","steps":8000,"active_energy_kcal":420.5,
+           "resting_heart_rate_bpm":58,"heart_rate_min_bpm":52,
+           "heart_rate_avg_bpm":71.5,"heart_rate_max_bpm":160}],
+ "workouts":[{"external_id":"6F1C…","activity_type":"running",
+              "source_type":"HKWorkoutActivityTypeRunning",
+              "start_at":"2026-09-02T12:00:00Z","end_at":"2026-09-02T12:30:00Z",
+              "energy_kcal":300,"avg_heart_rate_bpm":140,"max_heart_rate_bpm":171,
+              "source_name":"Apple Watch"}],
+ "weights":[{"external_id":"9A2B…","measured_at":"2026-09-02T06:00:00Z","weight_kg":80.0}]}
+```
+
+- `since` (inclusive) and `until` (exclusive) are timezone-aware timestamps, at most
+  31 days apart, with `until` no more than a day after server time. Every
+  `data_types` entry must be one the connection granted.
+- The server only touches the listed types. Daily rows (one per device-local
+  `YYYY-MM-DD`, at most 31, within a day of the window) are upserted, writing only
+  the columns of listed types: `steps` → `steps`, `active_energy` →
+  `active_energy_kcal`, `resting_heart_rate` → `resting_heart_rate_bpm`,
+  `heart_rate` → the min/avg/max columns. Clients send every day in the window,
+  with zero steps/energy where there was none, so a later sync corrects a day.
+  Heart rates are `null` when there was no reading.
+- With `workouts` listed, the provider's sessions whose `start_at` is in the window
+  (and any re-sent `external_id` stored elsewhere) are **replaced** by the ones
+  sent, so edits and deletions at the source propagate. `weight` works the same way
+  on `measured_at`. Workout heart rates are stored only when `heart_rate` is listed.
+- Activity types are `running`, `walking`, `cycling`, `swimming`,
+  `strength_training`, `hiit`, `yoga` or `other`; `source_type` keeps the
+  platform's own type. Weights are kilograms.
+- Bounds: steps 0–200,000 per day, energy 0–20,000 kcal, heart rate 20–250 bpm
+  (min ≤ avg ≤ max), weight 20–400 kg, sessions longer than zero and at most 24
+  hours, at most 500 workouts and 500 weights, unique `external_id`s per request.
+- The whole window is one transaction: any invalid row rejects the request and
+  nothing is written. Resending a window is idempotent.
+- `last_synced_at` becomes the window's `until`, capped at server time. Clients
+  start the next window two days before it.
+
+Sync requests share a per-IP bucket (`HEALTH_SYNC_RATE_LIMIT`, default 30 per
+window; 429 with `Retry-After`). Responses carry `Cache-Control: no-store`, and
+request bodies are never logged. The public probes `/health/live` and
+`/health/ready` are unrelated and stay unauthenticated.
 
 ## Workout history and pagination
 

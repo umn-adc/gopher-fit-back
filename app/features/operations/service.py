@@ -27,6 +27,8 @@ class OperationsService:
             group, limit = "auth", self.settings.auth_rate_limit
         elif path == "/social/users/search":
             group, limit = "search", self.settings.search_rate_limit
+        elif path.startswith("/health/connections/") and path.endswith("/sync"):
+            group, limit = "health_sync", self.settings.health_sync_rate_limit
         else:
             return None
         # Hash IPs with a secret; do not persist plaintext network identities.

@@ -72,6 +72,7 @@ Keep secrets outside version control. `.env.example` contains all settings.
 | `AUTH_RATE_LIMIT` | 20 | Requests per client IP per window, shared across `/auth/*` except recovery and `/profile/password` |
 | `RECOVERY_RATE_LIMIT` | 5 | Separate IP bucket across all `/auth/recovery*` operations |
 | `SEARCH_RATE_LIMIT` | 60 | Separate IP bucket for `/social/users/search` |
+| `HEALTH_SYNC_RATE_LIMIT` | 30 | Separate IP bucket for `POST /health/connections/{provider}/sync` |
 | `RATE_LIMIT_WINDOW_SECONDS` | 60 | Fixed-window duration for every bucket |
 | `METRICS_TOKEN` | Unset (disabled) | Independent secret, at least 32 characters; used as Bearer token |
 | `CORS_ORIGINS` | `[]` | JSON list, e.g. `["https://fit.example.com"]`; exact origins, no paths/trailing slash/wildcard |

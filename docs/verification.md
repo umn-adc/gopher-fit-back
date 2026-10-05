@@ -100,3 +100,22 @@ stepping back 1.7 seconds within a minute; PyJWT rejects an access token whose
 `iat` is later than the current time, so a token minted just before such a step is
 briefly rejected. Authentication code was not changed for this; rerun on a host
 with a monotonic wall clock if it recurs.
+
+## Health sync backend (2026-10-05)
+
+Revision `0007_health_sync` and the `/health/connections` routes (connect,
+disconnect, delete imported data, sync). Results on this branch:
+
+- `make check`: Ruff lint and format passed (87 files), strict mypy found no issues
+  in 56 source files, **pytest 392 passed**, OpenAPI snapshot comparison passed.
+- `uv run alembic check` against a temporary database upgraded to
+  `0007_health_sync`: no new upgrade operations detected. The upgrade is also tested
+  from a populated legacy database (`tests/test_health_connections.py`).
+- `tests/test_health_sync.py` covers window replacement, partial data types,
+  idempotent resends, every validation bound, rollback of a failed write,
+  ownership and the `HEALTH_SYNC_RATE_LIMIT` bucket.
+
+Several full runs had one or two unrelated tests fail (an unexpected 401 `Invalid
+JWT token`, and a recovery-expiry assertion), a different test each time. Each
+passed on rerun. The host clock was measured stepping back 1.68 seconds within 45
+seconds, which is the same cause as the 401s recorded above.
