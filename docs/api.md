@@ -306,6 +306,10 @@ window; 429 with `Retry-After`). Responses carry `Cache-Control: no-store`, and
 request bodies are never logged. The public probes `/health/live` and
 `/health/ready` are unrelated and stay unauthenticated.
 
+How the mobile app pairs, reads and syncs (and how to test it on an emulator) is
+described in the frontend's
+[`docs/health-integration.md`](../../gopher-fit-front/docs/health-integration.md).
+
 ## Workout history and pagination
 
 `occurred_at` on workout POST/PUT is an ISO 8601 timestamp with `T` and an explicit
